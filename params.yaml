@@ -1,0 +1,132 @@
+# =====================================================================================
+# params.yaml -- configuration for the Conflict-event -> Road-Blockage (c2rb) framework
+#
+# Edit these to tune the model. Loaded by the notebook via c2rb.config_from_yaml().
+# Three things drive every event's impact:
+#   R_phys  -- how far the physical effect of this event type reaches      (literature-seeded)
+#   r_geo   -- how uncertain the event's location is (ACLED geo_precision)  (ACLED semantics)
+#   p0      -- peak probability this event type blocks a road              (calibrated from notes)
+# =====================================================================================
+
+# ---- Data / geometry -----------------------------------------------------------------
+paths:
+  acled_csv: "ACLED Data_2026-06-17.csv"
+  # 1km-segmented Afghanistan road network (27,991 LineString segments, EPSG:4326).
+  roads: "Road Network/afg_trs_roads_l_arazi_2023x_fixed_segmented.shp"
+  roads_name_col: "NAME_OF_RO"   # column holding the road name (for ranking affected roads)
+  admin: "Admin Boundaries/afg_bnd_adm1_a_agcho-nsia_20171212.shp"  # adm1 provinces, for maps
+crs_metric: "EPSG:32642" # UTM 42N covers most of Afghanistan (used only if geopandas road path)
+
+# ---- Physical impact radius (km) by sub_event_type -----------------------------------
+# Seeded from the conflict-impact literature (Battles ~15-25km operational reach,
+# Explosions ~1-10km, Protests ~4-5km, targeted violence ~point). Tune per context.
+r_phys:
+  "Remote explosive/landmine/IED": 1.0
+  "Suicide bomb": 2.0
+  "Grenade": 1.0
+  "Shelling/artillery/missile attack": 7.0
+  "Air/drone strike": 3.0
+  "Armed clash": 15.0
+  "Non-state actor overtakes territory": 20.0
+  "Government regains territory": 20.0
+  "Non-violent transfer of territory": 20.0
+  "Attack": 0.5
+  "Abduction/forced disappearance": 0.5
+  "Sexual violence": 0.5
+  "Peaceful protest": 4.0
+  "Protest with intervention": 4.0
+  "Excessive force against protesters": 4.0
+  "Violent demonstration": 5.0
+  "Mob violence": 5.0
+  "Looting/property destruction": 3.0
+  "Disrupted weapons use": 1.0
+  "Arrests": 0.5
+  "Agreement": 2.0
+  "Change to group/activity": 2.0
+  "Headquarters or base established": 5.0
+  "Other": 2.0
+
+# ---- Distance-decay kernel class by sub_event_type -----------------------------------
+# gaussian    -> sharp, concentrated blast-like effect (explosives, strikes)
+# exponential -> heavy-tailed reach (running battles spread along terrain/roads)
+# uniform     -> roughly constant across an area then cut off (protests, territorial control)
+# point       -> effect confined to the immediate site (targeted violence, arrests)
+decay:
+  "Remote explosive/landmine/IED": gaussian
+  "Suicide bomb": gaussian
+  "Grenade": gaussian
+  "Shelling/artillery/missile attack": gaussian
+  "Air/drone strike": gaussian
+  "Armed clash": exponential
+  "Non-state actor overtakes territory": uniform
+  "Government regains territory": uniform
+  "Non-violent transfer of territory": uniform
+  "Attack": point
+  "Abduction/forced disappearance": point
+  "Sexual violence": point
+  "Peaceful protest": uniform
+  "Protest with intervention": uniform
+  "Excessive force against protesters": uniform
+  "Violent demonstration": uniform
+  "Mob violence": uniform
+  "Looting/property destruction": gaussian
+  "Disrupted weapons use": gaussian
+  "Arrests": point
+  "Agreement": uniform
+  "Change to group/activity": uniform
+  "Headquarters or base established": uniform
+  "Other": gaussian
+
+# ---- Locational uncertainty (km) by ACLED geo_precision code -------------------------
+# 1 = exact town/coords; 2 = near a town / part of a region; 3 = wider region / provincial.
+# NOTE: in this dataset ACLED snaps all same-location events to one centroid, so the
+# uncertainty CANNOT be estimated from coordinate spread (it comes back ~0). These values
+# therefore follow ACLED's documented precision semantics. See methodology.md, Limitations.
+r_geo:
+  1: 1.0
+  2: 5.0
+  3: 25.0
+
+# ---- Peak blockage propensity P0 by sub_event_type ----------------------------------
+# CALIBRATED: P(road_disruption | type) from notes weak labels, with Beta-Binomial
+# empirical-Bayes shrinkage (prior_strength=50) toward the 4.35% global rate.
+# Validated by 5-fold logistic regression: AUC=0.79, Brier=0.039 (well-calibrated).
+# Re-run the notebook's calibration section to regenerate after a new ACLED export.
+p0:
+  "Remote explosive/landmine/IED": 0.181
+  "Suicide bomb": 0.098
+  "Violent demonstration": 0.066
+  "Disrupted weapons use": 0.057
+  "Protest with intervention": 0.040
+  "Change to group/activity": 0.039
+  "Excessive force against protesters": 0.034
+  "Headquarters or base established": 0.032
+  "Armed clash": 0.031
+  "Grenade": 0.027
+  "Non-state actor overtakes territory": 0.021
+  "Peaceful protest": 0.019
+  "Non-violent transfer of territory": 0.018
+  "Sexual violence": 0.016
+  "Other": 0.015
+  "Mob violence": 0.014
+  "Government regains territory": 0.013
+  "Shelling/artillery/missile attack": 0.010
+  "Abduction/forced disappearance": 0.009
+  "Agreement": 0.009
+  "Looting/property destruction": 0.008
+  "Arrests": 0.006
+  "Attack": 0.006
+  "Air/drone strike": 0.002
+default_p0: 0.04          # fallback for any unseen sub_event_type (~global rate)
+
+# ---- Severity scaling: deadlier / civilian-targeting events stretch the radius -------
+# S(n_f) = alpha*(1+n_f) + (1-alpha)*(1+ln(1+n_f));  multiplier = 1 + kappa*(S/S_ref - 1)
+alpha: 0.15               # 0 = pure log (gentle), 1 = pure linear (aggressive)
+kappa: 0.25               # strength of severity stretch
+sev_ref_fatalities: 1.0   # fatality level mapping to multiplier 1.0
+sev_clip: [0.5, 3.0]      # bound the multiplier so outliers don't explode the radius
+civ_bump: 0.30            # extra stretch when civilian_targeting is flagged
+
+# ---- Temporal aggregation -----------------------------------------------------------
+tau_days: 30.0            # half-life (days) of an event's relevance in noisy-OR aggregation
+r_max_factor: 3.0         # ignore an event beyond r_max_factor * R_eff (compute speed)
