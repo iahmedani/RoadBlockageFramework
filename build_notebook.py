@@ -17,8 +17,8 @@ framework core in `c2rb.py`; all parameters live in `params.yaml`.
 Pipeline: `event → effective buffer radius R_eff → distance-decay kernel → P(block|d) →
 noisy-OR over nearby events (with temporal decay) → P(road blocked)`.
 
-The central idea you asked about — **the buffer zone must vary by `sub_event_type`** — is
-*calibrated from the data itself* by mining the `notes` column (Section 3).
+The central idea — **the buffer zone must vary by `sub_event_type`** — is *calibrated from the
+ground-truth `is_road_blocked` label* (Section 3).
 """)
 
 code(r"""
@@ -59,66 +59,89 @@ print("Fatalities — total: {:,} | mean/event: {:.2f} | max: {}".format(
 """)
 
 md(r"""
-## 2. Mine the `notes` column → a weak "road-disruption" label
+## 2. Load the ground-truth labels
 
-The export has **no "road blocked" column**, so we create one from the free-text `notes`.
-Reading the notes shows three *distinct* mechanisms (each its own regex in `c2rb.weak_label`):
+The classified export adds two human-verified yes/no columns:
 
-- **Blockage** — deliberate closure ("blocked the highway", "cut off the road", "under siege")
-- **Hazard** — explosive ordnance on a road ("roadside bomb", "IED on the road", "bridge destroyed")
-- **Denial** — movement denial ("convoy ambushed", "set up checkpoint")
+- **`is_road_affected`** — the event impacted a road in any way (broad).
+- **`is_road_blocked`** — a road was actually closed / made impassable (narrow). **This is our
+  calibration & scoring target.**
 
-The label is their union. It is derived **only from text, never from `sub_event_type`** — so
-the per-type rates in Section 3 are real signal, not circular.
+We load them as 0/1 via `c2rb.load_labels`, then run a **consistency check**: blockage should
+be a subset of being affected. The two also tell *different* stories, which justifies modelling
+blockage specifically.
 """)
 
 code(r"""
-labels = c2rb.weak_label(df["notes"])
-df = pd.concat([df, labels], axis=1)
-cov = {c: (int(df[c].sum()), 100*df[c].mean()) for c in
-       ["lbl_block","lbl_hazard","lbl_denial","road_disruption"]}
-print("Weak-label coverage:")
-for k,(n,p) in cov.items(): print(f"  {k:16} {n:6,}  ({p:.2f}%)")
-print("\nExample positive notes:")
-for s in df.loc[df.road_disruption==1, "notes"].head(4):
-    print("  •", s[:140])
+labels = c2rb.load_labels(df, CFG_RAW["paths"]["label_blocked_col"],
+                          CFG_RAW["paths"]["label_affected_col"])
+# overwrite the raw yes/no columns with the parsed 0/1 ints (same names)
+for col in labels.columns:
+    df[col] = labels[col].values
+A, B = df["is_road_affected"], df["is_road_blocked"]
+print(f"is_road_affected : {A.sum():,} yes ({100*A.mean():.1f}%)")
+print(f"is_road_blocked  : {B.sum():,} yes ({100*B.mean():.2f}%)")
+print("\nCross-tab (affected x blocked):")
+print(pd.crosstab(A, B, rownames=["affected"], colnames=["blocked"]))
+print(f"\nNesting check — blocked but NOT affected: {int(((B==1)&(A==0)).sum())} (should be ~0)")
+print(f"P(blocked | affected) = {B[A==1].mean():.3f}")
+""")
+
+md(r"""
+**Affected ≠ blocked.** The two labels diverge sharply by event type — the clearest evidence
+that we must model *blockage* directly, not road-relatedness.
+""")
+
+code(r"""
+div = (df.groupby("sub_event_type")
+         .agg(n=("is_road_blocked","size"),
+              p_affected=("is_road_affected","mean"),
+              p_blocked=("is_road_blocked","mean"))
+         .sort_values("p_blocked", ascending=False))
+print("Where AFFECTED and BLOCKED disagree most:")
+print("  IED/landmine — affects roads a lot, blocks them rarely (roadside bomb, traffic resumes)")
+print("  Protests / territorial control — block roads deliberately\n")
+div.loc[["Remote explosive/landmine/IED","Suicide bomb","Violent demonstration",
+         "Peaceful protest","Non-state actor overtakes territory","Air/drone strike"],
+        ["n","p_affected","p_blocked"]].round(3)
 """)
 
 md(r"""
 ## 3. Calibrate the peak blockage propensity `P0(s)`
 
-`P0(s) = P(road_disruption | sub_event_type)`, smoothed with **Beta-Binomial empirical-Bayes
+`P0(s) = P(is_road_blocked | sub_event_type)`, smoothed with **Beta-Binomial empirical-Bayes
 shrinkage** so small types (Grenade, Suicide bomb) don't get unstable 0.000 rates. Wilson 95%
 CIs show the uncertainty. **This is the headline answer to "how does blockage vary by type?"**
 """)
 
 code(r"""
-p0tab = c2rb.empirical_bayes_p0(df["road_disruption"], df["sub_event_type"], prior_strength=50)
+p0tab = c2rb.empirical_bayes_p0(df["is_road_blocked"], df["sub_event_type"], prior_strength=50)
 show = p0tab.head(16)
 fig, ax = plt.subplots(figsize=(9, 7))
 y = np.arange(len(show))
 ax.barh(y, show["p0_shrunk"], color="#cc4444")
 ax.errorbar(show["p0_shrunk"], y,
-            xerr=[show["p0_shrunk"]-show["ci_lo"], show["ci_hi"]-show["p0_shrunk"]],
-            fmt="none", ecolor="0.3", capsize=3)
+            xerr=[show["p0_shrunk"]-show["post_lo"], show["post_hi"]-show["p0_shrunk"]],
+            fmt="none", ecolor="0.3", capsize=3)  # Beta posterior 95% credible interval
 ax.set_yticks(y); ax.set_yticklabels(show.index, fontsize=9); ax.invert_yaxis()
 ax.set_xlabel("P0 = P(road blocked | type)"); ax.set_title("Calibrated blockage propensity by sub_event_type")
 plt.tight_layout(); plt.show()
-p0tab[["pos","n","p0_raw","p0_shrunk","ci_lo","ci_hi"]].round(4).head(12)
+p0tab[["pos","n","p0_raw","p0_shrunk","post_lo","post_hi"]].round(4).head(12)
 """)
 
 md(r"""
-**Result.** Propensity spans ~90× — IED/landmine (≈0.18, deliberately placed *on* roads) at the
-top, air/drone strikes (≈0.002, they target buildings/people) at the bottom. This is exactly
-why a single fixed buffer would be wrong: the model must be type-aware.
+**Result.** Protests and territorial-control events top the ranking (Violent demonstration,
+Change-to-group, territory transfers) while IED/airstrike/suicide sit at the bottom — the
+opposite of an *affected*-based ranking. A single fixed buffer would be wrong: the model must
+be type-aware.
 """)
 
 md(r"""
-### 3.1 Validate — does the signal generalise? (logistic regression)
+### 3.1 Validate — does the signal generalise? (supervised logistic regression)
 
-If event attributes predict the weak label out-of-sample, the calibration is trustworthy.
-We report cross-validated **AUC** (discrimination), **Brier** (accuracy of the probabilities),
-and a **calibration curve** (predicted vs. observed).
+With ground-truth labels this is now a *proper* supervised check. We train on event attributes
+and report cross-validated **AUC** (discrimination), **PR-AUC** (precision/recall under the
+0.87% imbalance), **Brier** (probability accuracy), and a **calibration curve**.
 """)
 
 code(r"""
@@ -127,18 +150,19 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score, brier_score_loss
+from sklearn.metrics import roc_auc_score, brier_score_loss, average_precision_score
 
 feat = df[["sub_event_type","geo_precision","civ_flag"]].copy()
 feat["log_fat"] = np.log1p(df["fatalities"])
-y = df["road_disruption"].values
+y = df["is_road_blocked"].values
 pre = ColumnTransformer([("oh", OneHotEncoder(handle_unknown="ignore"),
                           ["sub_event_type","geo_precision"])], remainder="passthrough")
 clf = Pipeline([("pre", pre), ("lr", LogisticRegression(max_iter=1000))])
 proba = cross_val_predict(clf, feat, y, cv=StratifiedKFold(5, shuffle=True, random_state=0),
                           method="predict_proba")[:, 1]
-print(f"AUC   = {roc_auc_score(y, proba):.3f}")
-print(f"Brier = {brier_score_loss(y, proba):.4f}  (no-skill baseline {y.mean()*(1-y.mean()):.4f})")
+print(f"AUC    = {roc_auc_score(y, proba):.3f}")
+print(f"PR-AUC = {average_precision_score(y, proba):.3f}  (prevalence {y.mean():.4f})")
+print(f"Brier  = {brier_score_loss(y, proba):.5f}  (no-skill baseline {y.mean()*(1-y.mean()):.5f})")
 
 dfc = pd.DataFrame({"p": proba, "y": y}); dfc["bin"] = pd.qcut(dfc["p"], 10, duplicates="drop")
 cal = dfc.groupby("bin", observed=True).agg(pred=("p","mean"), obs=("y","mean"))
@@ -150,8 +174,9 @@ ax.set_title("Calibration curve (5-fold CV)"); ax.legend(); plt.tight_layout(); 
 """)
 
 md(r"""
-AUC ≈ 0.79 with Brier *below* the no-skill baseline and points on the diagonal ⇒ the model is
-**both discriminative and well-calibrated**, so the `P0` values are valid probabilities.
+AUC ≈ 0.73 with Brier *below* the no-skill baseline and points near the diagonal ⇒ the model is
+discriminative and well-calibrated even under heavy class imbalance, so the `P0` values are
+valid probabilities.
 """)
 
 md(r"""
@@ -311,10 +336,9 @@ md(r"""
 
 - **Score given events** → `c2rb.score_targets(events, targets, cfg, as_of_date=...)`.
 - **Tune assumptions** → edit `params.yaml` (`R_phys`, decay class, severity, `tau_days`).
-- **Re-calibrate `P0`** on a new ACLED export → re-run Sections 2–3 and paste the shrunk values
-  into `params.yaml`.
-- **Add real roads / closures** → set `paths.roads`; replace the weak label with verified
-  closures (OCHA/Logistics Cluster) to move from weak to full supervision — the code is unchanged.
+- **Re-calibrate `P0`** on a new classified export → re-run Sections 2–3 (calibrated on
+  `is_road_blocked`) and paste the shrunk values into `params.yaml`.
+- **Swap road / closure layers** → set `paths.roads`; the scoring code is unchanged.
 
 See `methodology.md` for the formulas, justification, and limitations.
 """)

@@ -1,7 +1,8 @@
 # A Framework for Estimating Road-Blockage Probability from Conflict Events
 
 **Conflict-event → Road-Blockage (C2RB) impact model**
-Data: ACLED, Afghanistan, 2017–2026 (69,655 geocoded events) · `ACLED Data_2026-06-17.csv`
+Data: ACLED, Afghanistan, 2017–2026 (69,655 geocoded events) · `ACLED Data_classified.csv`
+(adds ground-truth `is_road_affected` / `is_road_blocked` labels)
 
 ---
 
@@ -12,16 +13,16 @@ nearby roads are *affected* and the *probability that each road is blocked*. The
 modelling question is the one you identified: **how large is an event's impact "buffer
 zone", and how does it differ by `sub_event_type`?**
 
-**The core difficulty — no ground truth.** The ACLED export has no column that says "a road
-was blocked." A fully supervised classifier therefore cannot be trained directly. Two naive
-alternatives are both unsatisfying:
+**Ground-truth labels.** Each event now carries two human/LLM-verified yes/no labels:
+**`is_road_affected`** (the event impacted a road in any way — 20.8% of events) and
+**`is_road_blocked`** (a road was actually closed / made impassable — 0.87% of events). The
+latter is our calibration and scoring target. *(The framework was originally built
+weakly-supervised — the signal was mined from the `notes` free text — because the raw export had
+no such column; that proxy has now been replaced by these labels.)*
 
-- *Pure assumption* (pick buffer radii by hand): not defensible, not reproducible.
-- *Pure ML* (train a closure classifier): impossible without labels.
-
-**Our approach — a weakly-supervised parametric probability model.** We build an explicit,
-interpretable probability model whose parameters are (a) **seeded from published literature**
-and (b) **calibrated against weak labels mined from the ACLED `notes` free text**. This is
+**Our approach — a supervised parametric probability model.** We build an explicit, interpretable
+probability model whose parameters are (a) **seeded from published literature** (the radii and
+decay shapes) and (b) **calibrated against the ground-truth `is_road_blocked` label**. This is
 defensible, reproducible, and mirrors established practice — ACLED's own *Conflict Exposure*
 product uses fixed event-type buffers (1/2/5 km) with Voronoi de-duplication, and a published
 conflict-impact model assigns per-event-type radii (Battles 25 km, Explosions 10 km,
@@ -61,12 +62,32 @@ R_eff(e) = sqrt( R_phys(s)² + R_geo(g)² ) · M_sev(e)
   events, with diminishing returns so a 50-fatality battle does not produce a 50× radius:
 
 ```
-S(n_f)   = α·(1 + n_f) + (1 − α)·(1 + ln(1 + n_f))         # blend of linear + log growth
-M_sev(e) = clip( 1 + κ·(S(n_f)/S(n_ref) − 1), 0.5, 3.0 ) · (1 + γ_civ·c)
+S(n_f)   = α·(1 + n_f) + (1 − α)·(1 + ln(1 + n_f))         # blend of linear + log growth   (Eq. 2)
+M_sev(e) = clip( 1 + κ·(S(n_f)/S(n_ref) − 1), 0.5, 3.0 ) · (1 + γ_civ·c)                     (Eq. 3)
 ```
 
 with defaults `α = 0.15` (mostly log growth), `κ = 0.25`, `γ_civ = 0.30`. The `clip` bounds
 keep outliers from exploding the buffer.
+
+**Explanation of Equation 2 (the severity score `S(n_f)`).** A deadlier event tends to affect a
+larger area, but the relationship is not linear — the difference between 0 and 5 fatalities is far
+more meaningful than between 100 and 105. Equation 2 captures this by **blending two growth
+curves**:
+
+- the **linear term `(1 + n_f)`** grows in direct proportion to the fatality count — it lets
+  genuinely large, mass-casualty events (a major battle, a deadly bombing) widen the buffer; and
+- the **logarithmic term `(1 + ln(1 + n_f))`** grows ever more slowly as `n_f` rises — it applies
+  *diminishing returns* so that extreme counts do not blow the radius up without bound.
+
+The mixing weight **`α ∈ [0,1]`** chooses the balance: `α = 0` is pure-log (very gentle scaling),
+`α = 1` is pure-linear (aggressive). The default `α = 0.15` keeps growth mostly logarithmic with a
+small linear component. The **`1 +` offsets** are deliberate: they make `ln(1 + n_f)` well-defined
+at `n_f = 0` (avoiding `ln 0 = −∞`) and guarantee `S(0) = 1`, so a zero-fatality event is the
+natural baseline. Equation 2 feeds Equation 3 only through the **ratio `S(n_f)/S(n_ref)`**: an
+event is compared to a reference fatality level `n_ref` (default 1), the ratio is turned into a
+gentle multiplier by `κ`, bounded to `[0.5, 3]`, and finally bumped by `γ_civ` if civilians were
+targeted. In short: Equation 2 converts a raw body count into a *bounded, diminishing-returns
+severity signal* that stretches the buffer sensibly rather than mechanically.
 
 ### 2.2 Distance-decay blockage probability — *"how does it fall with distance?"*
 
@@ -75,7 +96,7 @@ P(block | d, e) = P0(s) · K_s(d ; R_eff)
 ```
 
 - **`P0(s)`** — *peak blockage propensity*: the probability that an event of type `s` blocks a
-  road at the epicenter. **This is the parameter calibrated from `notes`** (§3).
+  road at the epicenter. **This is the parameter calibrated on the `is_road_blocked` label** (§3).
 - **`K_s(d)` ∈ [0,1]** — distance-decay kernel, its *shape* chosen by the event type's physics:| Kernel      | Formula                                  | Used for                                   | Rationale                                            |
   | ----------- | ---------------------------------------- | ------------------------------------------ | ---------------------------------------------------- |
   | Gaussian    | `exp(−d² / 2σ²)`, `σ = R_eff/2` | IED, suicide, grenade, shelling, airstrike | sharp, blast-like, fast decay                        |
@@ -109,58 +130,65 @@ identical, only the target points differ.
 
 ---
 
-## 3. Calibration & validation from `notes` (weak supervision)
+## 3. Calibration & validation on the ground-truth labels
 
-### 3.1 Building a weak "road-disruption" label
+### 3.1 The two labels — and why we model *blocked*, not *affected*
 
-Reading the `notes` text revealed **three distinct mechanisms** by which an event disrupts a
-road. Each is captured by its own regular expression (see `c2rb.weak_label`); the label is
-their union, `road_disruption = block ∨ hazard ∨ denial`:
+Each event carries two yes/no labels: **`is_road_affected`** (14,456 events, 20.8%) and
+**`is_road_blocked`** (607 events, 0.87%). Blockage is almost a strict subset of affectedness —
+only **1 of 607** blocked events is not also flagged affected — so the labels are internally
+consistent (`P0_blocked ≤ P0_affected` by construction), and `P(blocked | affected) = 0.042`.
 
-| Mechanism          | Signal in notes                                                               | Coverage                       | Typical type     |
-| ------------------ | ----------------------------------------------------------------------------- | ------------------------------ | ---------------- |
-| **Blockage** | "blocked/closed the highway", "cut off the road", "under siege", "impassable" | 0.14%                          | protests, sieges |
-| **Hazard**   | "roadside bomb", "IED/landmine on the road", "bridge destroyed"               | 2.36%                          | IED / landmine   |
-| **Denial**   | "convoy ambushed", "set up checkpoint", "seized control of the road"          | 1.89%                          | armed clashes    |
-| **Union**    | any of the above                                                              | **4.35%** (3,032 events) | —               |
+The two tell *different stories*, which is exactly why we calibrate on **blocked**:
 
-Crucially the label is **derived only from text, never from `sub_event_type`** (only ~18% of
-IEDs are "roadside"), so the per-type rates below are genuine signal, not a relabeling of the
-type. This three-mechanism distinction is itself a finding: *road hazard* (a mined road) and
-*deliberate blockage* (protesters on a highway) are different phenomena that a single "road
-blocked?" keyword would have missed.
+| sub_event_type                  |    n | P(affected) | P(blocked) |
+| ------------------------------- | ---: | ----------: | ---------: |
+| Remote explosive/landmine/IED   | 8,545 |   **0.656** |  **0.003** |
+| Suicide bomb                    |   289 |       0.405 |      0.000 |
+| Violent demonstration           |    44 |       0.386 |  **0.182** |
+| Peaceful protest                | 1,454 |       0.102 |      0.061 |
+| Air/drone strike                | 6,249 |       0.049 |      0.001 |
+
+An IED/landmine **affects** roads constantly (a roadside bomb — 66% of the time) but rarely
+**blocks** them (traffic resumes — 0.3%). A protest or demonstration is the reverse: it
+deliberately **blocks** the road. A single "is the road relevant?" signal — like the old weak
+label — conflates these; the ground-truth `is_road_blocked` label separates them cleanly.
 
 ### 3.2 Peak blockage propensity `P0(s)`
 
-`P0(s) = P(road_disruption | s)`, estimated with **Beta-Binomial empirical-Bayes shrinkage**
-(prior strength 50, anchored at the 4.35% global rate) so small-sample types (Grenade n=176,
-Suicide n=289) get stable estimates instead of noisy 0.000s. Selected results (full table in
-`params.yaml`), with Wilson 95% CIs:
+`P0(s) = P(is_road_blocked = yes | s)`, estimated with **Beta-Binomial empirical-Bayes
+shrinkage** (prior strength 50, anchored at the 0.87% global rate) so small-sample types
+(Grenade n=176, Suicide n=289) get stable estimates instead of noisy 0.000s. Selected results
+(full 24-row table in `params.yaml`), with Beta posterior 95% credible intervals:
 
-| sub_event_type                |      n |     P0 (shrunk) | 95% CI         |
-| ----------------------------- | -----: | --------------: | -------------- |
-| Remote explosive/landmine/IED |  8,545 | **0.181** | [0.174, 0.190] |
-| Suicide bomb                  |    289 |           0.098 | [0.077, 0.148] |
-| Armed clash                   | 39,974 |           0.031 | [0.029, 0.032] |
-| Peaceful protest              |  1,454 |           0.019 | [0.012, 0.026] |
-| Shelling/artillery/missile    |  2,540 |           0.010 | [0.007, 0.014] |
-| Air/drone strike              |  6,249 | **0.002** | [0.001, 0.003] |
+| sub_event_type                      |      n | P0 (shrunk) | 95% CrI        |
+| ----------------------------------- | -----: | ----------: | -------------- |
+| Violent demonstration               |     44 |   **0.090** | [0.04, 0.16]   |
+| Change to group/activity            |    318 |       0.083 | [0.06, 0.11]   |
+| Non-violent transfer of territory   |    130 |       0.080 | [0.05, 0.13]   |
+| Peaceful protest                    |  1,454 |       0.060 | [0.05, 0.07]   |
+| Non-state actor overtakes territory |    905 |       0.060 | [0.05, 0.08]   |
+| Armed clash                         | 39,974 |       0.007 | [0.006, 0.008] |
+| Remote explosive/landmine/IED       |  8,545 |       0.003 | [0.002, 0.005] |
+| Air/drone strike                    |  6,249 |   **0.001** | [0.000, 0.002] |
 
-**This is the headline result.** Blockage propensity spans ~90× across types: IEDs and
-landmines — deliberately placed *on roads* to deny movement — dominate, while air/drone
-strikes (which target buildings and people) almost never produce road-disruption language.
-This empirically confirms the premise that the buffer/blockage model **must** vary by
-`sub_event_type`.
+**This is the headline result.** Road *blockage* is driven by **protests and territorial-control
+events** (deliberate, sustained closures), not by explosive violence — the **opposite** of an
+affected-based ranking. This confirms the premise that the model **must** vary by
+`sub_event_type`, and shows why the ground-truth label matters: it corrects the weak label,
+which had wrongly placed IEDs at the top by conflating *affected* with *blocked*.
 
-### 3.3 Validation — does the signal generalise?
+### 3.3 Validation — supervised, on the true label
 
-A logistic regression `road_disruption ~ sub_event_type + log(1+fatalities) + geo_precision + civilian_targeting`, evaluated with 5-fold cross-validation:
+A logistic regression `is_road_blocked ~ sub_event_type + log(1+fatalities) + geo_precision +
+civilian_targeting`, evaluated with 5-fold cross-validation:
 
-- **AUC = 0.79** — event attributes alone discriminate road-disrupting events well above chance.
-- **Brier = 0.039** — *better* than the no-skill baseline (0.042), i.e. genuinely informative.
-- **Well-calibrated**: predicted ≈ observed across all deciles (e.g. top decile predicts 0.19,
-  observes 0.17). (Calibration requires the plain model; `class_weight="balanced"` improves
-  ranking but inflates probabilities — use isotonic/Platt calibration if class-weighting.)
+- **AUC = 0.73** — event attributes discriminate road-blocking events well above chance.
+- **PR-AUC = 0.042** vs a 0.0087 prevalence — ~5× better than random under heavy imbalance.
+- **Brier = 0.0085** — *better* than the no-skill baseline (0.0086), i.e. genuinely informative.
+- **Well-calibrated**: predicted ≈ observed across deciles. (Use the plain model for calibrated
+  probabilities; `class_weight="balanced"` improves ranking but inflates probabilities — apply
+  isotonic/Platt calibration if class-weighting.)
 
 The model is both **discriminative and calibrated**, so the calibrated `P0(s)` values are
 trustworthy as probabilities, not just rankings.
@@ -170,9 +198,9 @@ trustworthy as probabilities, not just rankings.
 - **Roads-within-1km benchmark — passed.** With the real road network loaded, **78% of events
   fall within 1 km of a road**, independently matching the published ~70% figure. This is strong
   external validation that the spatial model and data are consistent.
+- **Nesting check** — blocked ⊆ affected (1 exception in 607), confirming label consistency.
 - **Sensitivity analysis** over `R_phys` and decay-kernel choice shows how the affected-road
   footprint responds to assumptions (transparency about what is assumed vs. learned).
-- **Severity & geo-precision** move the weak label in sensible directions.
 
 ---
 
@@ -180,19 +208,22 @@ trustworthy as probabilities, not just rankings.
 
 Distance-decay kernels (Gaussian / exponential / uniform); quadrature combination of
 independent uncertainty scales; bounded log-linear severity scaling; noisy-OR probabilistic
-aggregation with exponential temporal decay; weak supervision via regex labelling of free
-text; Beta-Binomial empirical-Bayes shrinkage with Wilson confidence intervals; logistic
-regression with cross-validated AUC / Brier / calibration-curve diagnostics; (optional)
-Voronoi tessellation for overlap de-duplication and KDE for hotspot context.
+aggregation with exponential temporal decay; Beta-Binomial empirical-Bayes shrinkage with
+Beta posterior credible intervals (and Wilson intervals on raw rates); supervised logistic
+regression with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under
+class imbalance; (optional) Voronoi tessellation for overlap de-duplication and KDE for
+hotspot context.
 
 ---
 
 ## 5. Limitations & honest caveats
 
-1. **Weak labels are a proxy, not ground truth.** `road_disruption` measures *reported*
-   road-relevant language in `notes`, not verified physical closures. Reporting bias (some
-   events get richer notes) propagates into `P0`. Replace with real closure data
-   (OCHA/Logistics Cluster access reports) when available — the calibration code is unchanged.
+1. **Labels are ground truth, but derived from `notes`.** `is_road_affected` / `is_road_blocked`
+   were classified from the ACLED `notes` text, so they inherit its reporting quality — an event
+   whose notes omit a closure can be a false negative. **Class imbalance is severe** (blocked =
+   0.87%), so absolute probabilities are small and PR-style metrics matter more than accuracy.
+   Cross-checking against independent closure data (OCHA/Logistics Cluster access reports) would
+   further harden `P0` — the calibration code is unchanged.
 2. **`R_geo` cannot be learned from this data.** ACLED snaps all events at a named `location`
    to one shared centroid, so intra-location coordinate spread is structurally ~0 km. We
    therefore fall back to ACLED's *documented* precision semantics (1/5/25 km). If you obtain
@@ -210,7 +241,7 @@ Voronoi tessellation for overlap de-duplication and KDE for hotspot context.
 
 | File                             | Purpose                                                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `c2rb.py`                      | Framework core: weak-label regexes, calibration, radius/kernel/noisy-OR math, scorer                    |
+| `c2rb.py`                      | Framework core: label loading, calibration, radius/kernel/noisy-OR math, scorer                         |
 | `params.yaml`                  | All tunable parameters:`R_phys`, decay class, `R_geo`, calibrated `P0`, severity & time constants |
 | `conflict_road_blockage.ipynb` | Annotated end-to-end walkthrough: load → label → calibrate → score → map → sensitivity             |
 | `build_notebook.py`            | Regenerates the notebook from cell definitions (diffable source of truth)                               |

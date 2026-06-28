@@ -1,7 +1,7 @@
 """
 c2rb -- Conflict-event to Road-Blockage probability framework (impact modeling).
 
-A parametric, weakly-supervised probabilistic model that turns ACLED conflict events
+A parametric, supervised probabilistic model that turns ACLED conflict events
 into per-location road-blockage probabilities. The pipeline is:
 
     event -> effective buffer radius R_eff  (size of the impact zone)
@@ -9,14 +9,14 @@ into per-location road-blockage probabilities. The pipeline is:
           -> P(block | distance)            (per point / road segment)
           -> noisy-OR over nearby events    (combine many events, with temporal decay)
 
-Parameters are SEEDED from published literature and CALIBRATED against weak labels
-mined from the ACLED `notes` free text (see weak_label / empirical_bayes_p0).
+Radius/kernel shapes are SEEDED from published literature; the peak blockage propensity
+P0 is CALIBRATED against the ground-truth `is_road_blocked` label (see load_labels /
+empirical_bayes_p0). `is_road_affected` is loaded too, used only as a consistency check.
 
 The module has no hard dependency on geopandas; geometry uses numpy + a local
 equirectangular projection so it runs anywhere pandas/numpy are available.
 """
 from __future__ import annotations
-import re
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
@@ -50,53 +50,26 @@ def haversine_km(lat1, lon1, lat2, lon2):
 
 
 # --------------------------------------------------------------------------------------
-# 1. Weak-label mining from ACLED `notes`
+# 1. Ground-truth labels
 # --------------------------------------------------------------------------------------
-# Three mechanisms by which a conflict event disrupts a road, each its own regex so the
-# methodology can report them separately. The combined label = OR of the three.
-
-# (A) Explicit deliberate blockage / closure -- typical of protests and sieges.
-RE_BLOCK = re.compile(
-    r"block(?:ed|ing|s|ade)?\s+(?:the\s+|a\s+|off\s+)?(?:road|highway|route|traffic|pass|"
-    r"subway|street|movement|access)"
-    r"|(?:road|highway|route|street)\s+(?:was\s+|were\s+|is\s+|been\s+)?(?:block|clos)"
-    r"|clos(?:e|ed|ure)\s+(?:of\s+)?(?:the\s+)?(?:road|highway|route)"
-    r"|cut\s+off\s+(?:the\s+)?(?:road|highway|supply|access)"
-    r"|seal(?:ed)?\s+off|impassable|under\s+siege|besieg",
-    re.I)
-
-# (B) Road hazard -- explosive ordnance on/along a road makes it dangerous/impassable.
-RE_HAZARD = re.compile(
-    r"roadside\s+(?:bomb|ied|mine|explos)"
-    r"|(?:ied|mine|landmine|explosive)[^.]{0,30}\b(?:on|along|planted\s+(?:on|in|along)|"
-    r"placed\s+(?:on|in|along))\b[^.]{0,20}(?:road|highway|route|street)"
-    r"|(?:planted|placed)[^.]{0,25}(?:road|highway|route)"
-    r"|(?:destroyed|blew\s+up|damaged|blown\s+up)\s+(?:the\s+|a\s+)?bridge",
-    re.I)
-
-# (C) Road denial -- ambush of a convoy / movement column on a route.
-RE_DENIAL = re.compile(
-    r"convoy"
-    r"|ambush(?:ed)?[^.]{0,30}(?:road|highway|route|vehicle|truck|column)"
-    r"|set\s+up\s+(?:a\s+)?(?:check\s?point|checkpost|check-post)"
-    r"|seized\s+control\s+of[^.]{0,20}(?:road|highway|route|bridge)",
-    re.I)
+def _yesno_to_int(s: pd.Series) -> pd.Series:
+    """Map a yes/no (case/whitespace-insensitive) Series to int 1/0; anything else -> 0."""
+    return s.fillna("").astype(str).str.strip().str.lower().eq("yes").astype(int)
 
 
-def weak_label(notes: pd.Series) -> pd.DataFrame:
-    """Return a DataFrame of the three component weak labels and their union.
+def load_labels(df: pd.DataFrame, blocked_col: str = "is_road_blocked",
+                affected_col: str = "is_road_affected") -> pd.DataFrame:
+    """Return the ground-truth road labels as int 0/1 columns.
 
-    Columns: lbl_block, lbl_hazard, lbl_denial, road_disruption (int 0/1).
-    All derived purely from `notes` text -- never from sub_event_type -- so the
-    per-type rates that come out are genuine signal, not a relabeling of the type.
+    Always returns `is_road_blocked` (the calibration/scoring target). If `affected_col`
+    is present it is also returned (`is_road_affected`) for consistency checks only --
+    it is not used in scoring (the framework outputs blocked probability).
     """
-    s = notes.fillna("").astype(str)
-    out = pd.DataFrame({
-        "lbl_block": s.str.contains(RE_BLOCK).astype(int),
-        "lbl_hazard": s.str.contains(RE_HAZARD).astype(int),
-        "lbl_denial": s.str.contains(RE_DENIAL).astype(int),
-    })
-    out["road_disruption"] = (out.sum(axis=1) > 0).astype(int)
+    if blocked_col not in df:
+        raise KeyError(f"label column {blocked_col!r} not found in dataframe")
+    out = pd.DataFrame({"is_road_blocked": _yesno_to_int(df[blocked_col])})
+    if affected_col in df:
+        out["is_road_affected"] = _yesno_to_int(df[affected_col])
     return out
 
 
@@ -116,7 +89,7 @@ def wilson_ci(k, n, z=1.96):
 
 def empirical_bayes_p0(label: pd.Series, group: pd.Series, prior_strength: float = 50.0
                        ) -> pd.DataFrame:
-    """Per-group blockage propensity P0 = P(road_disruption | group).
+    """Per-group blockage propensity P0 = P(is_road_blocked | group).
 
     Raw rates are unstable for small groups (e.g. Grenade n=176 -> 0.000). We shrink each
     group's rate toward the global mean with a Beta(a,b) conjugate prior whose total
@@ -131,7 +104,12 @@ def empirical_bayes_p0(label: pd.Series, group: pd.Series, prior_strength: float
     agg["p0_raw"] = agg["pos"] / agg["n"]
     agg["p0_shrunk"] = (agg["pos"] + a0) / (agg["n"] + a0 + b0)
     lo, hi = wilson_ci(agg["pos"].values, agg["n"].values)
-    agg["ci_lo"], agg["ci_hi"] = lo, hi
+    agg["ci_lo"], agg["ci_hi"] = lo, hi   # Wilson interval on the RAW rate
+    # Beta posterior 95% credible interval -- consistent with the shrunk estimate (always
+    # brackets p0_shrunk, the posterior mean), so it is the right interval to plot.
+    from scipy.stats import beta as _beta
+    agg["post_lo"] = _beta.ppf(0.025, agg["pos"] + a0, agg["n"] - agg["pos"] + b0)
+    agg["post_hi"] = _beta.ppf(0.975, agg["pos"] + a0, agg["n"] - agg["pos"] + b0)
     agg["global_rate"] = glob
     return agg.sort_values("p0_shrunk", ascending=False)
 

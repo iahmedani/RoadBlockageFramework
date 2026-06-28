@@ -50,7 +50,7 @@
 
 \title{\vspace{-1.2cm}\textbf{\color{NavyBlue} A Framework for Estimating Road-Blockage
 Probability from Conflict Events}\\[2pt]
-\large A weakly-supervised, parametric impact model}
+\large A supervised, parametric impact model}
 \author{Conflict-event $\to$ Road-Blockage (\textsc{c2rb}) model}
 \date{ACLED, Afghanistan, 2017--2026 \quad(69{,}655 geocoded events)}
 
@@ -67,21 +67,21 @@ nearby roads are \emph{affected} and the \emph{probability that each road is blo
 central modelling question is: \textbf{how large is an event's impact ``buffer zone'', and how
 does it differ by \code{sub\_event\_type}?}
 
-\textbf{The core difficulty --- no ground truth.} The ACLED export has no column that says
-``a road was blocked''. A fully supervised classifier therefore cannot be trained directly.
-Two naive alternatives both fail:
-\begin{itemize}[nosep,leftmargin=1.4em]
-  \item \emph{Pure assumption} (pick buffer radii by hand): not defensible, not reproducible.
-  \item \emph{Pure ML} (train a closure classifier): impossible without labels.
-\end{itemize}
+\textbf{Ground-truth labels.} Each event carries two human/LLM-verified yes/no labels:
+\code{is\_road\_affected} (the event impacted a road in any way --- 20.8\% of events) and
+\code{is\_road\_blocked} (a road was actually closed / made impassable --- 0.87\% of events); the
+latter is our calibration and scoring target. \emph{(The framework was originally built
+weakly-supervised --- the signal was mined from the \code{notes} free text --- because the raw
+export had no such column; that proxy has now been replaced by these labels.)}
 
-\textbf{Our approach --- a weakly-supervised parametric probability model.} We build an
-explicit, interpretable probability model whose parameters are (a)~\textbf{seeded from
-published literature} and (b)~\textbf{calibrated against weak labels mined from the ACLED
-\code{notes} free text}. This is defensible, reproducible, and mirrors established practice:
-ACLED's own \emph{Conflict Exposure} product uses fixed event-type buffers (1/2/5\,km) with
-Voronoi de-duplication, and a published conflict-impact model assigns per-event-type radii
-(Battles 25\,km, Explosions 10\,km, Protests/Riots 5\,km) with type-specific decay shapes.
+\textbf{Our approach --- a supervised parametric probability model.} We build an explicit,
+interpretable probability model whose parameters are (a)~\textbf{seeded from published
+literature} (radii and decay shapes) and (b)~\textbf{calibrated against the ground-truth
+\code{is\_road\_blocked} label}. This is defensible, reproducible, and mirrors established
+practice: ACLED's own \emph{Conflict Exposure} product uses fixed event-type buffers
+(1/2/5\,km) with Voronoi de-duplication, and a published conflict-impact model assigns
+per-event-type radii (Battles 25\,km, Explosions 10\,km, Protests/Riots 5\,km) with
+type-specific decay shapes.
 
 \begin{notebox}
 \textbf{Pipeline.}\quad
@@ -126,6 +126,28 @@ S(n_f)   &= \alpha\,(1+n_f) + (1-\alpha)\bigl(1+\ln(1+n_f)\bigr) \label{eq:sev}\
 with defaults $\alpha=0.15$ (mostly log growth), $\kappa=0.25$, $\gamma_{\mathrm{civ}}=0.30$.
 The \code{clip} bounds keep outliers from exploding the buffer.
 
+\paragraph{Explanation of Equation~\eqref{eq:sev} (the severity score $S(n_f)$).}
+A deadlier event tends to affect a larger area, but not linearly --- the jump from $0$ to $5$
+fatalities matters far more than $100$ to $105$. Equation~\eqref{eq:sev} captures this by
+\textbf{blending two growth curves}:
+\begin{itemize}[nosep,leftmargin=1.4em]
+  \item the \textbf{linear term} $(1+n_f)$ grows in direct proportion to the fatality count ---
+        it lets genuinely large, mass-casualty events widen the buffer; and
+  \item the \textbf{logarithmic term} $\bigl(1+\ln(1+n_f)\bigr)$ grows ever more slowly as $n_f$
+        rises --- it applies \emph{diminishing returns} so extreme counts do not blow up the
+        radius without bound.
+\end{itemize}
+The mixing weight $\alpha\in[0,1]$ sets the balance: $\alpha=0$ is pure-log (gentle), $\alpha=1$
+is pure-linear (aggressive); the default $0.15$ keeps growth mostly logarithmic with a small
+linear component. The $1+\,$offsets are deliberate --- they make $\ln(1+n_f)$ well-defined at
+$n_f=0$ (avoiding $\ln 0=-\infty$) and guarantee $S(0)=1$, so a zero-fatality event is the
+natural baseline. $S$ enters Equation~\eqref{eq:msev} only through the \emph{ratio}
+$S(n_f)/S(n_{\mathrm{ref}})$: the event is compared to a reference fatality level
+$n_{\mathrm{ref}}$ (default $1$), the ratio is turned into a gentle multiplier by $\kappa$,
+bounded to $[0.5,3]$, and bumped by $\gamma_{\mathrm{civ}}$ if civilians were targeted. In
+short, Equation~\eqref{eq:sev} converts a raw body count into a \emph{bounded,
+diminishing-returns severity signal} that stretches the buffer sensibly rather than mechanically.
+
 \subsection{Distance-decay blockage probability --- ``how does it fall with distance?''}
 
 \begin{equation}
@@ -135,8 +157,8 @@ The \code{clip} bounds keep outliers from exploding the buffer.
 
 \begin{itemize}[nosep,leftmargin=1.4em]
   \item $P_0(s)$ --- \emph{peak blockage propensity}: the probability that an event of type $s$
-        blocks a road at the epicentre. \textbf{This is the parameter calibrated from
-        \code{notes}} (Sec.~\ref{sec:calib}).
+        blocks a road at the epicentre. \textbf{This is the parameter calibrated on the
+        \code{is\_road\_blocked} label} (Sec.~\ref{sec:calib}).
   \item $K_s(d)\in[0,1]$ --- distance-decay kernel, its \emph{shape} chosen by the event
         type's physics (Table~\ref{tab:kernels}).
 \end{itemize}
@@ -188,44 +210,46 @@ scoring runs over a regular lat/lon grid, producing a continuous blockage-risk r
 fallback) --- the code path is identical, only the target points differ.
 
 % =====================================================================================
-\section{Calibration \& validation from \texttt{notes} (weak supervision)}
+\section{Calibration \& validation on the ground-truth labels}
 \label{sec:calib}
 
-\subsection{Building a weak ``road-disruption'' label}
+\subsection{The two labels --- and why we model \emph{blocked}, not \emph{affected}}
 
-The export has no ``road blocked'' column, so we create one from the \code{notes} free text.
-Reading the notes reveals \textbf{three distinct mechanisms} by which an event disrupts a road;
-each is captured by its own regular expression and the label is their union,
-$\text{road\_disruption}=\text{block}\lor\text{hazard}\lor\text{denial}$.
+Each event carries two yes/no labels: \code{is\_road\_affected} (14{,}456 events, 20.8\%) and
+\code{is\_road\_blocked} (607 events, 0.87\%). Blockage is almost a strict subset of
+affectedness --- only \textbf{1 of 607} blocked events is not also flagged affected --- so the
+labels are internally consistent ($P_0^{\text{blk}}\le P_0^{\text{aff}}$ by construction) and
+$P(\text{blocked}\mid\text{affected})=0.042$. The two tell \emph{different stories}, which is
+exactly why we calibrate on \emph{blocked}:
 
 \begin{table}[h]
 \centering
-\renewcommand{\arraystretch}{1.25}
-\begin{tabularx}{\textwidth}{@{}l X r l@{}}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}l r r r@{}}
 \toprule
-\textbf{Mechanism} & \textbf{Signal in notes} & \textbf{Coverage} & \textbf{Typical type} \\
+\textbf{sub\_event\_type} & \textbf{$n$} & \textbf{P(affected)} & \textbf{P(blocked)} \\
 \midrule
-Blockage & ``blocked/closed the highway'', ``cut off the road'', ``under siege'' & 0.14\% & protests, sieges \\
-Hazard   & ``roadside bomb'', ``IED/landmine on the road'', ``bridge destroyed'' & 2.36\% & IED / landmine \\
-Denial   & ``convoy ambushed'', ``set up checkpoint'', ``seized control of the road'' & 1.89\% & armed clashes \\
-\midrule
-\textbf{Union} & any of the above & \textbf{4.35\%} & 3{,}032 events \\
+Remote explosive/landmine/IED & 8{,}545 & \textbf{0.656} & \textbf{0.003} \\
+Suicide bomb                  & 289     & 0.405 & 0.000 \\
+Violent demonstration         & 44      & 0.386 & \textbf{0.182} \\
+Peaceful protest              & 1{,}454 & 0.102 & 0.061 \\
+Air/drone strike              & 6{,}249 & 0.049 & 0.001 \\
 \bottomrule
-\end{tabularx}
-\caption{The three road-disruption mechanisms mined from \code{notes}.}
-\label{tab:mechanisms}
+\end{tabular}
+\caption{Affected $\neq$ blocked: an IED \emph{affects} roads constantly (roadside bomb) but
+rarely \emph{blocks} them; a demonstration is the reverse.}
+\label{tab:divergence}
 \end{table}
 
-Crucially the label is derived \textbf{only from text, never from \code{sub\_event\_type}}
-(only $\sim$18\% of IEDs are ``roadside''), so the per-type rates below are genuine signal, not
-a relabelling of the type. This three-mechanism distinction is itself a finding: \emph{road
-hazard} (a mined road) and \emph{deliberate blockage} (protesters on a highway) are different
-phenomena that a single ``road blocked?'' keyword would have missed.
+An IED/landmine \emph{affects} roads constantly (66\% of the time) but rarely \emph{blocks} them
+(traffic resumes --- 0.3\%); a protest or demonstration deliberately \emph{blocks} the road. A
+single ``is the road relevant?'' signal conflates these; the ground-truth \code{is\_road\_blocked}
+label separates them cleanly.
 
 \subsection{Peak blockage propensity $P_0(s)$}
 
-$P_0(s)=P(\text{road\_disruption}\mid s)$ is estimated with \textbf{Beta--Binomial
-empirical-Bayes shrinkage} (prior strength 50, anchored at the 4.35\% global rate) so
+$P_0(s)=P(\code{is\_road\_blocked}=\text{yes}\mid s)$ is estimated with \textbf{Beta--Binomial
+empirical-Bayes shrinkage} (prior strength 50, anchored at the 0.87\% global rate) so
 small-sample types (Grenade $n{=}176$, Suicide $n{=}289$) get stable estimates instead of
 noisy zeros:
 \begin{equation}
@@ -233,21 +257,24 @@ noisy zeros:
 \qquad a_0 = \bar p\,m,\quad b_0=(1-\bar p)\,m,\quad m=50,
 \end{equation}
 where $k_s$ positives out of $n_s$ events of type $s$, and $\bar p$ is the global rate.
-Selected results with Wilson 95\% intervals (full table in \code{params.yaml}):
+Selected results with Beta posterior 95\% credible intervals (full 24-row table in
+\code{params.yaml}):
 
 \begin{table}[h]
 \centering
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{@{}l r r l@{}}
 \toprule
-\textbf{sub\_event\_type} & \textbf{$n$} & \textbf{$P_0$ (shrunk)} & \textbf{95\% CI} \\
+\textbf{sub\_event\_type} & \textbf{$n$} & \textbf{$P_0$ (shrunk)} & \textbf{95\% CrI} \\
 \midrule
-Remote explosive/landmine/IED      & 8{,}545  & \textbf{0.181} & [0.174, 0.190] \\
-Suicide bomb                       & 289      & 0.098 & [0.077, 0.148] \\
-Armed clash                        & 39{,}974 & 0.031 & [0.029, 0.032] \\
-Peaceful protest                   & 1{,}454  & 0.019 & [0.012, 0.026] \\
-Shelling/artillery/missile attack  & 2{,}540  & 0.010 & [0.007, 0.014] \\
-Air/drone strike                   & 6{,}249  & \textbf{0.002} & [0.001, 0.003] \\
+Violent demonstration                 & 44       & \textbf{0.090} & [0.04, 0.16] \\
+Change to group/activity              & 318      & 0.083 & [0.06, 0.11] \\
+Non-violent transfer of territory     & 130      & 0.080 & [0.05, 0.13] \\
+Peaceful protest                      & 1{,}454  & 0.060 & [0.05, 0.07] \\
+Non-state actor overtakes territory   & 905      & 0.060 & [0.05, 0.08] \\
+Armed clash                           & 39{,}974 & 0.007 & [0.006, 0.008] \\
+Remote explosive/landmine/IED         & 8{,}545  & 0.003 & [0.002, 0.005] \\
+Air/drone strike                      & 6{,}249  & \textbf{0.001} & [0.000, 0.002] \\
 \bottomrule
 \end{tabular}
 \caption{Calibrated blockage propensity --- the headline result.}
@@ -255,27 +282,28 @@ Air/drone strike                   & 6{,}249  & \textbf{0.002} & [0.001, 0.003] 
 \end{table}
 
 \begin{notebox}
-\textbf{Headline result.} Blockage propensity spans $\sim$90$\times$ across types: IEDs and
-landmines --- deliberately placed \emph{on roads} to deny movement --- dominate, while
-air/drone strikes (which target buildings and people) almost never produce road-disruption
-language. This empirically confirms that the buffer/blockage model \textbf{must} vary by
-\code{sub\_event\_type}.
+\textbf{Headline result.} Road \emph{blockage} is driven by \textbf{protests and
+territorial-control events} (deliberate, sustained closures), not by explosive violence --- the
+\emph{opposite} of an affected-based ranking. This confirms that the model \textbf{must} vary by
+\code{sub\_event\_type}, and shows why the ground-truth label matters: it corrects the old weak
+label, which wrongly placed IEDs at the top by conflating \emph{affected} with \emph{blocked}.
 \end{notebox}
 
-\subsection{Validation --- does the signal generalise?}
+\subsection{Validation --- supervised, on the true label}
 
-A logistic regression $\text{road\_disruption}\sim\code{sub\_event\_type}+\log(1+\text{fatalities})
+A logistic regression $\code{is\_road\_blocked}\sim\code{sub\_event\_type}+\log(1+\text{fatalities})
 +\code{geo\_precision}+\code{civilian\_targeting}$, evaluated with 5-fold cross-validation:
 
 \begin{itemize}[nosep,leftmargin=1.4em]
-  \item \textbf{AUC $= 0.79$} --- event attributes alone discriminate road-disrupting events
-        well above chance.
-  \item \textbf{Brier $= 0.039$} --- \emph{better} than the no-skill baseline (0.042), i.e.\
+  \item \textbf{AUC $= 0.73$} --- event attributes discriminate road-blocking events well above
+        chance.
+  \item \textbf{PR-AUC $= 0.042$} vs a 0.0087 prevalence --- $\sim$5$\times$ better than random
+        under heavy imbalance.
+  \item \textbf{Brier $= 0.0085$} --- \emph{better} than the no-skill baseline (0.0086), i.e.\
         genuinely informative.
-  \item \textbf{Well-calibrated} --- predicted $\approx$ observed across all deciles (top decile
-        predicts 0.19, observes 0.17). Calibration requires the plain model;
-        \code{class\_weight="balanced"} improves ranking but inflates probabilities (use
-        isotonic/Platt calibration if class-weighting).
+  \item \textbf{Well-calibrated} --- predicted $\approx$ observed across deciles. Use the plain
+        model for calibrated probabilities; \code{class\_weight="balanced"} improves ranking but
+        inflates probabilities (apply isotonic/Platt calibration if class-weighting).
 \end{itemize}
 
 The model is both discriminative and calibrated, so the $P_0(s)$ values are trustworthy as
@@ -286,9 +314,10 @@ probabilities, not merely rankings.
   \item \textbf{Roads-within-1\,km benchmark --- passed.} With the real road network loaded,
         \textbf{78\% of events fall within 1\,km of a road}, independently matching the
         published $\sim$70\% figure --- strong external validation.
+  \item \textbf{Nesting check} --- blocked $\subseteq$ affected (1 exception in 607), confirming
+        label consistency.
   \item \textbf{Sensitivity analysis} over $\Rphys$ and decay-kernel choice shows how the
         affected-road footprint responds to assumptions (what is assumed vs.\ learned).
-  \item \textbf{Severity \& geo-precision} move the weak label in sensible directions.
 \end{itemize}
 
 % =====================================================================================
@@ -296,20 +325,22 @@ probabilities, not merely rankings.
 
 Distance-decay kernels (Gaussian / exponential / uniform); quadrature combination of
 independent uncertainty scales; bounded log-linear severity scaling; noisy-OR probabilistic
-aggregation with exponential temporal decay; weak supervision via regex labelling of free text;
-Beta--Binomial empirical-Bayes shrinkage with Wilson confidence intervals; logistic regression
-with cross-validated AUC / Brier / calibration-curve diagnostics; (optional) Voronoi
-tessellation for overlap de-duplication and KDE for hotspot context.
+aggregation with exponential temporal decay; Beta--Binomial empirical-Bayes shrinkage with Beta
+posterior credible intervals (and Wilson intervals on raw rates); supervised logistic regression
+with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under class imbalance;
+(optional) Voronoi tessellation for overlap de-duplication and KDE for hotspot context.
 
 % =====================================================================================
 \section{Limitations \& honest caveats}
 
 \begin{enumerate}[leftmargin=1.6em]
-  \item \textbf{Weak labels are a proxy, not ground truth.} \code{road\_disruption} measures
-        \emph{reported} road-relevant language in \code{notes}, not verified physical closures.
-        Reporting bias propagates into $P_0$. Replace with real closure data
-        (OCHA/Logistics Cluster access reports) when available --- the calibration code is
-        unchanged.
+  \item \textbf{Labels are ground truth, but derived from \code{notes}.} \code{is\_road\_affected}
+        / \code{is\_road\_blocked} were classified from the ACLED \code{notes} text, so they
+        inherit its reporting quality --- an event whose notes omit a closure can be a false
+        negative. \textbf{Class imbalance is severe} (blocked $=0.87\%$), so absolute
+        probabilities are small and PR-style metrics matter more than accuracy. Cross-checking
+        against independent closure data (OCHA/Logistics Cluster access reports) would further
+        harden $P_0$ --- the calibration code is unchanged.
   \item \textbf{$\Rgeo$ cannot be learned from this data.} ACLED snaps all events at a named
         \code{location} to one shared centroid, so intra-location coordinate spread is
         structurally $\sim$0\,km. We therefore fall back to ACLED's \emph{documented} precision
@@ -334,7 +365,7 @@ tessellation for overlap de-duplication and KDE for hotspot context.
 \toprule
 \textbf{File} & \textbf{Purpose} \\
 \midrule
-\code{c2rb.py} & Framework core: weak-label regexes, calibration, radius/kernel/noisy-OR math, scorer \\
+\code{c2rb.py} & Framework core: label loading, calibration, radius/kernel/noisy-OR math, scorer \\
 \code{params.yaml} & All tunable parameters: $\Rphys$, decay class, $\Rgeo$, calibrated $P_0$, severity \& time constants \\
 \code{conflict\_road\_blockage.ipynb} & Annotated end-to-end walkthrough: load $\to$ label $\to$ calibrate $\to$ score $\to$ map $\to$ sensitivity \\
 \code{build\_notebook.py} & Regenerates the notebook from cell definitions (diffable source of truth) \\

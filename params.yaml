@@ -5,12 +5,14 @@
 # Three things drive every event's impact:
 #   R_phys  -- how far the physical effect of this event type reaches      (literature-seeded)
 #   r_geo   -- how uncertain the event's location is (ACLED geo_precision)  (ACLED semantics)
-#   p0      -- peak probability this event type blocks a road              (calibrated from notes)
+#   p0      -- peak probability this event type blocks a road  (calibrated on is_road_blocked)
 # =====================================================================================
 
 # ---- Data / geometry -----------------------------------------------------------------
 paths:
-  acled_csv: "ACLED Data_2026-06-17.csv"
+  acled_csv: "ACLED Data_classified.csv"   # ACLED + ground-truth is_road_affected/blocked
+  label_blocked_col: "is_road_blocked"     # calibration & scoring target (yes/no)
+  label_affected_col: "is_road_affected"   # consistency check only (not scored)
   # 1km-segmented Afghanistan road network (27,991 LineString segments, EPSG:4326).
   roads: "Road Network/afg_trs_roads_l_arazi_2023x_fixed_segmented.shp"
   roads_name_col: "NAME_OF_RO"   # column holding the road name (for ranking affected roads)
@@ -88,36 +90,38 @@ r_geo:
   3: 25.0
 
 # ---- Peak blockage propensity P0 by sub_event_type ----------------------------------
-# CALIBRATED: P(road_disruption | type) from notes weak labels, with Beta-Binomial
-# empirical-Bayes shrinkage (prior_strength=50) toward the 4.35% global rate.
-# Validated by 5-fold logistic regression: AUC=0.79, Brier=0.039 (well-calibrated).
-# Re-run the notebook's calibration section to regenerate after a new ACLED export.
+# CALIBRATED on the GROUND-TRUTH is_road_blocked label: P(is_road_blocked=yes | type), with
+# Beta-Binomial empirical-Bayes shrinkage (prior_strength=50) toward the 0.87% global rate.
+# Validated by 5-fold logistic regression: AUC=0.73, Brier=0.0085 (< baseline; well-calibrated).
+# Note: protests/territorial-control events dominate; IEDs strongly AFFECT roads but rarely
+# BLOCK them (roadside bomb -> traffic resumes), which the true labels capture.
+# Re-run the notebook's calibration section to regenerate after a new classified export.
 p0:
-  "Remote explosive/landmine/IED": 0.181
-  "Suicide bomb": 0.098
-  "Violent demonstration": 0.066
-  "Disrupted weapons use": 0.057
-  "Protest with intervention": 0.040
-  "Change to group/activity": 0.039
-  "Excessive force against protesters": 0.034
-  "Headquarters or base established": 0.032
-  "Armed clash": 0.031
-  "Grenade": 0.027
-  "Non-state actor overtakes territory": 0.021
-  "Peaceful protest": 0.019
-  "Non-violent transfer of territory": 0.018
-  "Sexual violence": 0.016
-  "Other": 0.015
-  "Mob violence": 0.014
-  "Government regains territory": 0.013
-  "Shelling/artillery/missile attack": 0.010
-  "Abduction/forced disappearance": 0.009
-  "Agreement": 0.009
-  "Looting/property destruction": 0.008
-  "Arrests": 0.006
-  "Attack": 0.006
-  "Air/drone strike": 0.002
-default_p0: 0.04          # fallback for any unseen sub_event_type (~global rate)
+  "Violent demonstration": 0.0897
+  "Change to group/activity": 0.0827
+  "Non-violent transfer of territory": 0.0802
+  "Non-state actor overtakes territory": 0.0601
+  "Peaceful protest": 0.0595
+  "Government regains territory": 0.0457
+  "Protest with intervention": 0.0415
+  "Excessive force against protesters": 0.0369
+  "Other": 0.0292
+  "Looting/property destruction": 0.0255
+  "Abduction/forced disappearance": 0.0118
+  "Mob violence": 0.0104
+  "Armed clash": 0.0067
+  "Headquarters or base established": 0.0065
+  "Grenade": 0.0064
+  "Attack": 0.0057
+  "Remote explosive/landmine/IED": 0.0033
+  "Sexual violence": 0.0033
+  "Shelling/artillery/missile attack": 0.0021
+  "Agreement": 0.0017
+  "Suicide bomb": 0.0013
+  "Arrests": 0.0012
+  "Air/drone strike": 0.0007
+  "Disrupted weapons use": 0.0003
+default_p0: 0.0087        # fallback for any unseen sub_event_type (= global blocked rate)
 
 # ---- Severity scaling: deadlier / civilian-targeting events stretch the radius -------
 # S(n_f) = alpha*(1+n_f) + (1-alpha)*(1+ln(1+n_f));  multiplier = 1 + kappa*(S/S_ref - 1)
