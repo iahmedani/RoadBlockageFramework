@@ -1,0 +1,87 @@
+{
+  "country": "afghanistan",
+  "trained_at": "2026-06-29",
+  "acled_csv": "ACLED Data_classified.csv",
+  "blocked_col": "is_road_blocked",
+  "events": 69655,
+  "n_positive": 607,
+  "blocked_rate": 0.008714378005886153,
+  "prior_strength": 50.0,
+  "validation": {
+    "auc": 0.7320434110063014,
+    "pr_auc": 0.04226931743696617,
+    "brier": 0.008456792565218273,
+    "brier_baseline": 0.008638437621856681,
+    "prevalence": 0.008714378005886153,
+    "n": 69655,
+    "n_positive": 607
+  },
+  "validation_calibration": [
+    {
+      "pred": 0.0009701725442808427,
+      "obs": 0.0007155123068116772
+    },
+    {
+      "pred": 0.002808687621830854,
+      "obs": 0.003161512027491409
+    },
+    {
+      "pred": 0.004475509698838331,
+      "obs": 0.004613095238095238
+    },
+    {
+      "pred": 0.0059967551774488615,
+      "obs": 0.006844987363100252
+    },
+    {
+      "pred": 0.006483886614307738,
+      "obs": 0.00514886948735169
+    },
+    {
+      "pred": 0.006750632460782616,
+      "obs": 0.007573298712539219
+    },
+    {
+      "pred": 0.006963642210766419,
+      "obs": 0.006133828996282528
+    },
+    {
+      "pred": 0.0071044832669326565,
+      "obs": 0.005343264248704663
+    },
+    {
+      "pred": 0.007322754834670244,
+      "obs": 0.006539664486778504
+    },
+    {
+      "pred": 0.0390278419131714,
+      "obs": 0.040430482838859805
+    }
+  ],
+  "p0": {
+    "Violent demonstration": 0.0897,
+    "Change to group/activity": 0.0827,
+    "Non-violent transfer of territory": 0.0802,
+    "Non-state actor overtakes territory": 0.0601,
+    "Peaceful protest": 0.0595,
+    "Government regains territory": 0.0457,
+    "Protest with intervention": 0.0415,
+    "Excessive force against protesters": 0.0369,
+    "Other": 0.0292,
+    "Looting/property destruction": 0.0255,
+    "Abduction/forced disappearance": 0.0118,
+    "Mob violence": 0.0104,
+    "Armed clash": 0.0067,
+    "Headquarters or base established": 0.0065,
+    "Grenade": 0.0064,
+    "Attack": 0.0057,
+    "Remote explosive/landmine/IED": 0.0033,
+    "Sexual violence": 0.0033,
+    "Shelling/artillery/missile attack": 0.0021,
+    "Agreement": 0.0017,
+    "Suicide bomb": 0.0013,
+    "Arrests": 0.0012,
+    "Air/drone strike": 0.0007,
+    "Disrupted weapons use": 0.0003
+  }
+}

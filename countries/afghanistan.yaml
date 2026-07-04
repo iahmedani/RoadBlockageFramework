@@ -1,0 +1,49 @@
+# =====================================================================================
+# countries/afghanistan.yaml -- COUNTRY override for the c2rb framework.
+#
+# Merged ON TOP of params.base.yaml by c2rb.load_config(). Holds ONLY what is local:
+# data paths, the metric CRS, and the calibrated blockage propensity P0.
+#
+# The p0 / default_p0 block below was WRITTEN BY train.py (prior_strength=50), calibrated on this country's ground-truth 'is_road_blocked'
+# label. Retrain:  python train.py --config countries/afghanistan.yaml
+# =====================================================================================
+
+# ---- Data / geometry (LOCAL) -----------------------------------------------------
+paths:
+  acled_csv: "ACLED Data_classified.csv"
+  label_blocked_col: "is_road_blocked"
+  label_affected_col: "is_road_affected"
+  roads: "Road Network/afg_trs_roads_l_arazi_2023x_fixed_segmented.shp"
+  roads_name_col: "NAME_OF_RO"
+  admin: "Admin Boundaries/afg_bnd_adm1_a_agcho-nsia_20171212.shp"
+crs_metric: "EPSG:32642"
+
+# ---- Peak blockage propensity P0 by sub_event_type  (CALIBRATED) ------------------
+# P0(s) = P(is_road_blocked = yes | type) with Beta-Binomial empirical-Bayes shrinkage
+# toward the global blocked rate. Validated by logistic regression (see metrics.json).
+p0:
+  "Violent demonstration": 0.0897
+  "Change to group/activity": 0.0827
+  "Non-violent transfer of territory": 0.0802
+  "Non-state actor overtakes territory": 0.0601
+  "Peaceful protest": 0.0595
+  "Government regains territory": 0.0457
+  "Protest with intervention": 0.0415
+  "Excessive force against protesters": 0.0369
+  "Other": 0.0292
+  "Looting/property destruction": 0.0255
+  "Abduction/forced disappearance": 0.0118
+  "Mob violence": 0.0104
+  "Armed clash": 0.0067
+  "Headquarters or base established": 0.0065
+  "Grenade": 0.0064
+  "Attack": 0.0057
+  "Remote explosive/landmine/IED": 0.0033
+  "Sexual violence": 0.0033
+  "Shelling/artillery/missile attack": 0.0021
+  "Agreement": 0.0017
+  "Suicide bomb": 0.0013
+  "Arrests": 0.0012
+  "Air/drone strike": 0.0007
+  "Disrupted weapons use": 0.0003
+default_p0: 0.0087        # fallback for any unseen sub_event_type (= global blocked rate)

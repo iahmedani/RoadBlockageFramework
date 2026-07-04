@@ -12,29 +12,30 @@ md(r"""
 
 **ACLED Afghanistan, 2017–2026 (69,655 events).** This notebook turns conflict events into
 per-location **road-blockage probabilities**. It mirrors `methodology.md` and uses the
-framework core in `c2rb.py`; all parameters live in `params.yaml`.
+framework core in `c2rb.py`. Parameters are **layered**: the country-independent physics lives
+in `params.base.yaml`, and country-local settings (data paths, metric CRS, calibrated `P0`) live
+in `countries/afghanistan.yaml`; `c2rb.load_config` merges them.
 
 Pipeline: `event → effective buffer radius R_eff → distance-decay kernel → P(block|d) →
 noisy-OR over nearby events (with temporal decay) → P(road blocked)`.
 
 The central idea — **the buffer zone must vary by `sub_event_type`** — is *calibrated from the
-ground-truth `is_road_blocked` label* (Section 3).
+ground-truth `is_road_blocked` label* (Section 3). The same calibration runs headless via
+`python train.py --config countries/afghanistan.yaml` (see `LOCALIZATION.md`).
 """)
 
 code(r"""
 import warnings; warnings.filterwarnings("ignore")
-import numpy as np, pandas as pd, yaml
+import numpy as np, pandas as pd
 import matplotlib.pyplot as plt
 import c2rb
 
 plt.rcParams["figure.dpi"] = 110
-CFG_RAW = yaml.safe_load(open("params.yaml"))
+CFG_RAW = c2rb.load_config("countries/afghanistan.yaml")  # base + country override, merged
 cfg = c2rb.config_from_yaml(CFG_RAW)
 
 df = pd.read_csv(CFG_RAW["paths"]["acled_csv"], encoding="utf-8-sig", low_memory=False)
-df["event_date"] = pd.to_datetime(df["event_date"])
-df["fatalities"] = df["fatalities"].fillna(0).astype(int)
-df["civ_flag"] = (df["civilian_targeting"].fillna("") != "").astype(int)
+df = c2rb.prepare_events(df)   # parse event_date, type fatalities, derive civ_flag
 print(f"Loaded {len(df):,} events | {df.event_date.min().date()} → {df.event_date.max().date()}")
 print(f"Country: {df.country.unique()} | sub_event_types: {df.sub_event_type.nunique()}")
 df[["event_date","sub_event_type","fatalities","geo_precision","latitude","longitude"]].head()
@@ -145,29 +146,17 @@ and report cross-validated **AUC** (discrimination), **PR-AUC** (precision/recal
 """)
 
 code(r"""
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score, brier_score_loss, average_precision_score
+# Same 5-fold logistic-regression check that `train.py` runs, via the shared helper so the
+# notebook and the CLI can never drift apart.
+val = c2rb.validate_signal(df, "is_road_blocked", n_splits=5, seed=0)
+print(f"AUC    = {val['auc']:.3f}")
+print(f"PR-AUC = {val['pr_auc']:.4f}  (prevalence {val['prevalence']:.4f})")
+print(f"Brier  = {val['brier']:.5f}  (no-skill baseline {val['brier_baseline']:.5f})")
 
-feat = df[["sub_event_type","geo_precision","civ_flag"]].copy()
-feat["log_fat"] = np.log1p(df["fatalities"])
-y = df["is_road_blocked"].values
-pre = ColumnTransformer([("oh", OneHotEncoder(handle_unknown="ignore"),
-                          ["sub_event_type","geo_precision"])], remainder="passthrough")
-clf = Pipeline([("pre", pre), ("lr", LogisticRegression(max_iter=1000))])
-proba = cross_val_predict(clf, feat, y, cv=StratifiedKFold(5, shuffle=True, random_state=0),
-                          method="predict_proba")[:, 1]
-print(f"AUC    = {roc_auc_score(y, proba):.3f}")
-print(f"PR-AUC = {average_precision_score(y, proba):.3f}  (prevalence {y.mean():.4f})")
-print(f"Brier  = {brier_score_loss(y, proba):.5f}  (no-skill baseline {y.mean()*(1-y.mean()):.5f})")
-
-dfc = pd.DataFrame({"p": proba, "y": y}); dfc["bin"] = pd.qcut(dfc["p"], 10, duplicates="drop")
-cal = dfc.groupby("bin", observed=True).agg(pred=("p","mean"), obs=("y","mean"))
+cal = val["calibration"]
 fig, ax = plt.subplots(figsize=(5.5, 5.5))
-ax.plot([0, cal.max().max()], [0, cal.max().max()], "k--", lw=1, label="perfect")
+hi = float(max(cal["pred"].max(), cal["obs"].max()))
+ax.plot([0, hi], [0, hi], "k--", lw=1, label="perfect")
 ax.plot(cal["pred"], cal["obs"], "o-", color="#2266cc", label="model")
 ax.set_xlabel("predicted P(block)"); ax.set_ylabel("observed rate")
 ax.set_title("Calibration curve (5-fold CV)"); ax.legend(); plt.tight_layout(); plt.show()
@@ -252,7 +241,7 @@ print(f"P(block): mean={grid.p.mean():.3f}  max={grid.p.max():.3f}  cells>0.5: {
 md(r"""
 ### 6.1 Road-layer mode (when you supply your 1 km segments)
 
-Set `paths.roads` in `params.yaml` to your segmented road file. The cell below loads it with
+Set `paths.roads` in `countries/afghanistan.yaml` to your segmented road file. The cell below loads it with
 geopandas, scores each segment midpoint with the *same* `score_targets`, and runs the
 "~70% of events within 1 km of a road" literature sanity check. It is skipped if no file is set.
 """)
@@ -334,11 +323,14 @@ sens
 md(r"""
 ## 8. Using the framework
 
-- **Score given events** → `c2rb.score_targets(events, targets, cfg, as_of_date=...)`.
-- **Tune assumptions** → edit `params.yaml` (`R_phys`, decay class, severity, `tau_days`).
-- **Re-calibrate `P0`** on a new classified export → re-run Sections 2–3 (calibrated on
-  `is_road_blocked`) and paste the shrunk values into `params.yaml`.
-- **Swap road / closure layers** → set `paths.roads`; the scoring code is unchanged.
+- **Score given events** → `c2rb.score_targets(events, targets, cfg, as_of_date=...)`, or run
+  `python score.py --config countries/afghanistan.yaml --as-of … --window-days …` for road
+  rankings + a map.
+- **Tune assumptions** → edit `params.base.yaml` (`R_phys`, decay class, severity, `tau_days`).
+- **Re-calibrate `P0`** on a new classified export → `python train.py --config
+  countries/afghanistan.yaml` writes the shrunk values straight back into the country config.
+- **Localize to another country** → copy `countries/afghanistan.yaml`, point it at that country's
+  CSV + roads, then `train.py` then `score.py`. See `LOCALIZATION.md`.
 
 See `methodology.md` for the formulas, justification, and limitations.
 """)

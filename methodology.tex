@@ -258,7 +258,7 @@ noisy zeros:
 \end{equation}
 where $k_s$ positives out of $n_s$ events of type $s$, and $\bar p$ is the global rate.
 Selected results with Beta posterior 95\% credible intervals (full 24-row table in
-\code{params.yaml}):
+\code{countries/afghanistan.yaml}):
 
 \begin{table}[h]
 \centering
@@ -348,7 +348,7 @@ with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under 
         notebook would populate $\Rgeo$.
   \item \textbf{$\Rphys$ and kernel shapes are assumptions} (literature-seeded), unlike $P_0$
         (data-calibrated). The sensitivity analysis quantifies how much they matter; tune in
-        \code{params.yaml}.
+        \code{params.base.yaml}.
   \item \textbf{Independence in noisy-OR} slightly over-counts spatially correlated events;
         Voronoi de-duplication (ACLED's approach) is the recommended refinement.
   \item \textbf{Static / impact-only.} This scores the impact of given events; it does not
@@ -356,7 +356,30 @@ with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under 
 \end{enumerate}
 
 % =====================================================================================
-\section{Files}
+\section{Pipeline, configuration, and localization}
+
+The framework runs headless through two CLI scripts, both reading a \emph{layered} configuration.
+\code{python train.py --config countries/<name>.yaml} calibrates $P_0(s)$ on the country's
+\code{is\_road\_blocked} labels (Beta--Binomial shrinkage), writes it back into the country config,
+and emits \code{artifacts/<name>/} (\code{metrics.json}, \code{model\_card.md}, calibration plots);
+the calibrated $P_0$ \emph{is} the trained model, and the logistic regression is run only to
+validate it. \code{python score.py --config countries/<name>.yaml --as-of <date> --window-days <n>}
+scores road segments via noisy-OR over the window's events and ranks the most likely-blocked named
+roads, falling back to a grid surface if no road layer is set --- the \emph{spatial} question
+(\emph{which roads} are blocked). For the \emph{event-level} question (\emph{will this event} block
+a road?), \code{python predict.py --config countries/<name>.yaml --sub-event-type \ldots} loads the
+deployable \code{model.joblib} --- a logistic-regression classifier \code{train.py} fits on the
+labels and persists alongside $P_0$ --- and returns one probability per event (single event or CSV
+batch).
+
+Country-independent physics --- $\Rphys$, decay kernels, $\Rgeo$, the severity and temporal
+constants --- lives in \code{params.base.yaml} and is shared by every country. Each country adds a
+small override (\code{countries/<name>.yaml}) carrying only its data paths, metric CRS, and
+calibrated $P_0$; \code{c2rb.load\_config} merges the two. Adapting the model to a new country means
+copying the override, pointing it at that country's ACLED export and segmented road network, and
+re-running \code{train.py} then \code{score.py} --- no changes to \code{c2rb.py}. See
+\code{LOCALIZATION.md} for the procedure (including \code{tools/segment\_roads.py}, which cuts a raw
+road network into $\sim$1\,km segments).
 
 \begin{table}[h]
 \centering
@@ -365,8 +388,13 @@ with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under 
 \toprule
 \textbf{File} & \textbf{Purpose} \\
 \midrule
-\code{c2rb.py} & Framework core: label loading, calibration, radius/kernel/noisy-OR math, scorer \\
-\code{params.yaml} & All tunable parameters: $\Rphys$, decay class, $\Rgeo$, calibrated $P_0$, severity \& time constants \\
+\code{c2rb.py} & Framework core: config/label loading, calibration, radius/kernel/noisy-OR math, scorer \\
+\code{train.py / score.py / predict.py} & CLI: calibrate + save the model / per-road rankings (spatial) / event-level P(blocked) \\
+\code{artifacts/<name>/model.joblib} & Deployable trained model: event-level classifier + parametric $P_0$ \\
+\code{params.base.yaml} & Universal parameters: $\Rphys$, decay class, $\Rgeo$, severity \& time constants (shared) \\
+\code{countries/<name>.yaml} & Per-country config: data paths, metric CRS, calibrated $P_0$ (written by \code{train.py}) \\
+\code{LOCALIZATION.md} & Step-by-step guide to building a model for another country \\
+\code{tools/segment\_roads.py} & Utility: cut a raw road network into $\sim$1\,km segments \\
 \code{conflict\_road\_blockage.ipynb} & Annotated end-to-end walkthrough: load $\to$ label $\to$ calibrate $\to$ score $\to$ map $\to$ sensitivity \\
 \code{build\_notebook.py} & Regenerates the notebook from cell definitions (diffable source of truth) \\
 \code{requirements.txt} & Pinned dependencies for reproducibility \\
@@ -375,9 +403,10 @@ with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under 
 \end{tabularx}
 \end{table}
 
-\textbf{Reproduce.} Create the venv and \code{pip install -r requirements.txt}, then run the
-notebook top-to-bottom. The road and admin layers are already wired in \code{params.yaml}; set
-\code{paths.roads: null} to fall back to grid-raster mode.
+\textbf{Reproduce.} Create the venv and \code{pip install -r requirements.txt}, then either run the
+two CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
+wired in \code{countries/afghanistan.yaml}; set \code{paths.roads: null} to fall back to
+grid-raster mode.
 
 % =====================================================================================
 \section{References}

@@ -49,7 +49,7 @@ R_eff(e) = sqrt( R_phys(s)² + R_geo(g)² ) · M_sev(e)
 ```
 
 - **`R_phys(s)`** — physical/operational impact radius of the event type (km), literature-seeded
-  per `sub_event_type` (see `params.yaml`). Example: IED 1 km, armed clash 15 km, protest 4 km.
+  per `sub_event_type` (see `params.base.yaml`). Example: IED 1 km, armed clash 15 km, protest 4 km.
 - **`R_geo(g)`** — *locational uncertainty* of where the event actually happened. ACLED
   geo-precision 1 ≈ town (1 km), 2 ≈ near a town / part of a region (5 km), 3 ≈ wider region
   (25 km). This matters: a low-precision event must "spread" its blockage probability over a
@@ -159,7 +159,7 @@ label — conflates these; the ground-truth `is_road_blocked` label separates th
 `P0(s) = P(is_road_blocked = yes | s)`, estimated with **Beta-Binomial empirical-Bayes
 shrinkage** (prior strength 50, anchored at the 0.87% global rate) so small-sample types
 (Grenade n=176, Suicide n=289) get stable estimates instead of noisy 0.000s. Selected results
-(full 24-row table in `params.yaml`), with Beta posterior 95% credible intervals:
+(full 24-row table in `countries/afghanistan.yaml`), with Beta posterior 95% credible intervals:
 
 | sub_event_type                      |      n | P0 (shrunk) | 95% CrI        |
 | ----------------------------------- | -----: | ----------: | -------------- |
@@ -229,7 +229,7 @@ hotspot context.
    therefore fall back to ACLED's *documented* precision semantics (1/5/25 km). If you obtain
    finer coordinates, the empirical-spread estimator in the notebook will populate `R_geo`.
 3. **`R_phys` and kernel *shapes* are assumptions** (literature-seeded), unlike `P0` (data-
-   calibrated). The sensitivity analysis quantifies how much they matter; tune in `params.yaml`.
+   calibrated). The sensitivity analysis quantifies how much they matter; tune in `params.base.yaml`.
 4. **Independence in noisy-OR** slightly over-counts spatially correlated events; Voronoi
    de-duplication (ACLED's approach) is the recommended refinement.
 5. **Static / impact-only.** Per the brief, this scores the impact of given events; it does
@@ -237,21 +237,51 @@ hotspot context.
 
 ---
 
-## 6. Files
+## 6. Pipeline, configuration, and localization
+
+The framework runs headless through two CLI scripts, both reading a **layered** configuration:
+
+- **`python train.py --config countries/<name>.yaml`** — calibrates `P0(s)` on the country's
+  `is_road_blocked` labels (Beta-Binomial shrinkage), writes it back into the country config, and
+  emits `artifacts/<name>/` (`metrics.json`, `model_card.md`, calibration plots). The calibrated
+  `P0` *is* the trained model; the logistic regression is run only to validate it.
+- **`python score.py --config countries/<name>.yaml --as-of <date> --window-days <n>`** — scores
+  road segments via noisy-OR over the events in the window and ranks the most likely-blocked named
+  roads (`road_rankings.csv`, `p_block_map.png`); falls back to a grid surface if no road layer is
+  set. This is the **spatial** question: *which roads* are blocked.
+- **`python predict.py --config countries/<name>.yaml --sub-event-type … --geo-precision …`** —
+  the **event-level** question: *will this event* block a road? It loads the deployable
+  `model.joblib` (a logistic-regression classifier `train.py` fits on the labels and persists
+  alongside `P0`) and returns one probability per event, for a single event or a CSV batch.
+
+**Layered config.** Country-independent physics — `R_phys`, decay kernels, `R_geo`, the severity
+and temporal constants — lives in `params.base.yaml` and is shared by every country. Each country
+adds a small override (`countries/<name>.yaml`) carrying only its data **paths**, metric **CRS**,
+and **calibrated `P0`**. `c2rb.load_config` merges the two. To adapt the model to a new country you
+copy the override, point it at that country's ACLED export and segmented road network, and re-run
+`train.py` then `score.py` — no changes to `c2rb.py`. See `LOCALIZATION.md` for the full procedure
+(including `tools/segment_roads.py`, which cuts a raw road network into ~1 km segments).
+
+### Files
 
 | File                             | Purpose                                                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `c2rb.py`                      | Framework core: label loading, calibration, radius/kernel/noisy-OR math, scorer                         |
-| `params.yaml`                  | All tunable parameters:`R_phys`, decay class, `R_geo`, calibrated `P0`, severity & time constants |
+| `c2rb.py`                      | Framework core: config loading, label loading, calibration, radius/kernel/noisy-OR math, scorer         |
+| `train.py` / `score.py` / `predict.py` | CLI pipeline: calibrate + save the model / per-road rankings + maps (spatial) / event-level P(blocked) |
+| `artifacts/<name>/model.joblib`  | Deployable trained model: event-level classifier + parametric `P0`                                      |
+| `params.base.yaml`             | Universal parameters:`R_phys`, decay class, `R_geo`, severity & time constants (shared by all countries) |
+| `countries/<name>.yaml`        | Per-country config: data paths, metric CRS, calibrated `P0` (written by `train.py`)                     |
+| `LOCALIZATION.md`              | Step-by-step guide to building a model for another country                                              |
+| `tools/segment_roads.py`       | Utility: cut a raw road network into ~1 km segments                                                     |
 | `conflict_road_blockage.ipynb` | Annotated end-to-end walkthrough: load → label → calibrate → score → map → sensitivity             |
 | `build_notebook.py`            | Regenerates the notebook from cell definitions (diffable source of truth)                               |
 | `requirements.txt`             | Pinned dependencies for reproducibility                                                                 |
 | `methodology.md`               | This document                                                                                           |
 
-**Reproduce:** create the venv and `pip install -r requirements.txt` (or `pandas numpy scipy scikit-learn matplotlib seaborn pyyaml nbformat jupyter geopandas shapely pyproj`), then run the
-notebook top-to-bottom. The road and admin layers are already wired in `params.yaml`
-(`Road Network/…segmented.shp`, `Admin Boundaries/…adm1….shp`); set `paths.roads: null` to fall
-back to grid-raster mode.
+**Reproduce:** create the venv and `pip install -r requirements.txt` (or `pandas numpy scipy scikit-learn matplotlib seaborn pyyaml nbformat jupyter geopandas shapely pyproj`), then either run the
+two CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
+wired in `countries/afghanistan.yaml` (`Road Network/…segmented.shp`,
+`Admin Boundaries/…adm1….shp`); set `paths.roads: null` to fall back to grid-raster mode.
 
 ---
 

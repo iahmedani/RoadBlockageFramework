@@ -122,7 +122,8 @@ GAUSS, EXPON, UNIFORM, POINT = "gaussian", "exponential", "uniform", "point"
 
 @dataclass
 class C2RBConfig:
-    """All tunable parameters. Defaults are literature-seeded; override from params.yaml."""
+    """All tunable parameters. Defaults are literature-seeded; override from params.base.yaml
+    (universal) + countries/<name>.yaml (local) via load_config()."""
     # physical impact radius (km) by sub_event_type
     r_phys: dict = field(default_factory=lambda: {
         "Remote explosive/landmine/IED": 1.0, "Suicide bomb": 2.0, "Grenade": 1.0,
@@ -281,7 +282,7 @@ def score_targets(events: pd.DataFrame, targets: pd.DataFrame, cfg: C2RBConfig,
 # 7. Config (de)serialization
 # --------------------------------------------------------------------------------------
 def config_from_yaml(d: dict) -> C2RBConfig:
-    """Build a C2RBConfig from a parsed params.yaml dict (only overrides provided keys)."""
+    """Build a C2RBConfig from a parsed params dict (only overrides provided keys)."""
     cfg = C2RBConfig()
     for key in ("r_phys", "decay", "p0", "default_p0", "alpha", "kappa",
                 "sev_ref_fatalities", "civ_bump", "tau_days", "r_max_factor"):
@@ -292,3 +293,127 @@ def config_from_yaml(d: dict) -> C2RBConfig:
     if "sev_clip" in d and d["sev_clip"]:
         cfg.sev_clip = tuple(d["sev_clip"])
     return cfg
+
+
+# --------------------------------------------------------------------------------------
+# 8. Layered configuration: universal base + per-country override (localization)
+# --------------------------------------------------------------------------------------
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge `override` onto `base` (override wins); returns a new dict."""
+    out = dict(base)
+    for k, v in (override or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def load_config(country_path: str, base_path: str = "params.base.yaml") -> dict:
+    """Load and merge the universal base params with a country override file.
+
+    `base_path` (params.base.yaml) holds the country-INDEPENDENT physics -- r_phys,
+    decay kernels, r_geo, severity and temporal constants. `country_path`
+    (countries/<name>.yaml) holds only what is local: data `paths`, the metric
+    `crs_metric`, and the calibrated `p0` / `default_p0`. The returned dict is the
+    merged configuration; pass it to config_from_yaml() and read paths[...] from it.
+    """
+    import yaml
+    with open(base_path, encoding="utf-8") as fh:
+        base = yaml.safe_load(fh) or {}
+    with open(country_path, encoding="utf-8") as fh:
+        country = yaml.safe_load(fh) or {}
+    return _deep_merge(base, country)
+
+
+# --------------------------------------------------------------------------------------
+# 9. Shared event preparation + supervised validation (reused by CLI + notebook)
+# --------------------------------------------------------------------------------------
+def prepare_events(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalise the raw ACLED columns the calibrator/scorer need; returns the same df.
+
+    Parses `event_date`, coerces `fatalities` to int, and derives `civ_flag` (1 when
+    `civilian_targeting` is set). Safe to call on any ACLED export.
+    """
+    df["event_date"] = pd.to_datetime(df["event_date"])
+    df["fatalities"] = pd.to_numeric(df.get("fatalities"), errors="coerce").fillna(0).astype(int)
+    civ = df.get("civilian_targeting", pd.Series("", index=df.index))
+    df["civ_flag"] = (civ.fillna("").astype(str).str.strip() != "").astype(int)
+    return df
+
+
+# Event-level features the supervised model reads. Categorical cols are one-hot encoded;
+# numeric cols pass through. Kept in one place so validation, training, and prediction agree.
+CLF_CAT_FEATURES = ["sub_event_type", "geo_precision"]
+CLF_NUM_FEATURES = ["civ_flag", "log_fat"]
+
+
+def build_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Assemble the event-level feature frame the classifier expects.
+
+    Columns: sub_event_type, geo_precision, civ_flag, log_fat (= log1p(fatalities)).
+    Run prepare_events first so `civ_flag` and `fatalities` exist.
+    """
+    feat = df[["sub_event_type", "geo_precision", "civ_flag"]].copy()
+    feat["log_fat"] = np.log1p(df["fatalities"])
+    return feat
+
+
+def _make_classifier():
+    """The one classifier definition: OneHot(categoricals) -> LogisticRegression."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import OneHotEncoder
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+    pre = ColumnTransformer([("oh", OneHotEncoder(handle_unknown="ignore"),
+                              CLF_CAT_FEATURES)], remainder="passthrough")
+    return Pipeline([("pre", pre), ("lr", LogisticRegression(max_iter=1000))])
+
+
+def validate_signal(df: pd.DataFrame, label_col: str = "is_road_blocked",
+                    n_splits: int = 5, seed: int = 0) -> dict:
+    """Cross-validated supervised check that the per-type blockage signal generalises.
+
+    Cross-validates the same classifier `train_classifier` persists, and returns AUC,
+    PR-AUC, Brier (with the no-skill baseline = prevalence*(1-prevalence)) plus a
+    per-decile calibration table. Requires `civ_flag` and `fatalities` (run
+    prepare_events first) and an int `label_col`.
+    """
+    from sklearn.model_selection import StratifiedKFold, cross_val_predict
+    from sklearn.metrics import roc_auc_score, brier_score_loss, average_precision_score
+
+    y = np.asarray(df[label_col].values)
+    proba = cross_val_predict(_make_classifier(), build_features(df), y,
+                              cv=StratifiedKFold(n_splits, shuffle=True, random_state=seed),
+                              method="predict_proba")[:, 1]
+    prevalence = float(y.mean())
+    dfc = pd.DataFrame({"p": proba, "y": y})
+    dfc["bin"] = pd.qcut(dfc["p"], 10, duplicates="drop")
+    cal = (dfc.groupby("bin", observed=True)
+              .agg(pred=("p", "mean"), obs=("y", "mean")).reset_index(drop=True))
+    return {
+        "auc": float(roc_auc_score(y, proba)),
+        "pr_auc": float(average_precision_score(y, proba)),
+        "brier": float(brier_score_loss(y, proba)),
+        "brier_baseline": float(prevalence * (1 - prevalence)),
+        "prevalence": prevalence,
+        "n": int(len(y)),
+        "n_positive": int(y.sum()),
+        "calibration": cal,   # DataFrame with columns pred, obs (one row per decile)
+    }
+
+
+def train_classifier(df: pd.DataFrame, label_col: str = "is_road_blocked"):
+    """Fit the event-level classifier on ALL rows and return the fitted sklearn Pipeline.
+
+    Unlike validate_signal (cross-validated, for metrics only), this refits on the full
+    dataset to produce the deployable model that predict_blockage / predict.py consume.
+    """
+    clf = _make_classifier()
+    clf.fit(build_features(df), np.asarray(df[label_col].values))
+    return clf
+
+
+def predict_blockage(classifier, events: pd.DataFrame) -> np.ndarray:
+    """P(road blocked) for each event from a fitted classifier (run prepare_events first)."""
+    return classifier.predict_proba(build_features(events))[:, 1]

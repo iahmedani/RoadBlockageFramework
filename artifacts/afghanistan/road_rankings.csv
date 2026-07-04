@@ -1,0 +1,700 @@
+NAME_OF_RO,max_p,mean_p,segments
+Kandahr to Daman,0.2982,0.182,21
+Kandahr to Panjwaiy,0.296,0.1846,51
+Kabul to Maydan Shahr,0.2905,0.0943,38
+Kabul to Surobi,0.2888,0.0309,67
+Kabul to Bagrami,0.2887,0.1707,11
+Kandahar to Arghandab,0.286,0.2494,19
+Kandhar to Zhera,0.2827,0.2209,21
+Tirin Kot to Dehrawud,0.2746,0.1121,58
+Dehrawud to Kejran,0.2731,0.07,69
+Kabul to Mir Bachakot,0.2724,0.0595,33
+Kabul Airport Road,0.2698,0.1742,5
+Balkh to Qarqin,0.2619,0.0514,93
+balkh to Chemtal,0.2579,0.1949,16
+Deh Dadi to Balkh,0.2574,0.1855,20
+Dehrawod to Shahid-e-Hassas,0.2555,0.0955,36
+Balkh to Char Bulak,0.2554,0.1974,20
+Mazar-e-Sharif to Khulm,0.2538,0.0266,67
+Mazar-e-Sharif to Shiberghan,0.2526,0.0729,138
+Kabul to Chahar Asyab,0.2514,0.0593,35
+Mazar-e-Sharif to Deh Dadi,0.2499,0.1934,31
+Mazar-e-Sarif to Shor Tapa,0.247,0.0349,95
+Mazar-e-Sharif to Marmol,0.2331,0.0257,30
+Mazar-e-Sarif to Char Kent,0.2314,0.0169,32
+Zhera to Maiwand,0.228,0.0808,49
+KAndahar to Shah wali kot,0.2266,0.17,17
+Balkh to Deh Dadi,0.2158,0.1846,12
+Zheray,0.2111,0.2024,9
+Zhera to Khakrez,0.2101,0.0554,34
+Kandahr to Spinboldak,0.2096,0.0323,88
+Balkh to Dawlat abad,0.2049,0.1376,21
+Kandahar Airport Road,0.204,0.1182,29
+Zheryi to Shah wali kot,0.2031,0.1612,29
+Zheryi to Khakez,0.181,0.0533,33
+Char Bulak to Dawlat abad,0.1783,0.0396,29
+Maywand to Lashkar gah,0.1781,0.0745,47
+Balkh to Faizabad,0.1775,0.0407,26
+Dehdadi  to Chemtal,0.1714,0.1691,16
+Chamtal to Shiberghan,0.1701,0.0444,38
+Deh Dadi to Sholgarah,0.1639,0.0486,32
+Nahr-e-Saraj to Highway,0.1549,0.1549,1
+Delaram to Nahr-e-Saraj,0.1515,0.0202,118
+Maywand to Nahr-e-Saraj,0.1503,0.0347,51
+Nahr-e-Saraj to Nawzad,0.1479,0.0226,62
+Nahr-e-Saraj to Musa Qala,0.1466,0.0223,56
+Bust Airport Road,0.1444,0.1444,1
+Lashkar gah to Nadali,0.1427,0.0988,16
+Khost to Sabari,0.1298,0.0843,34
+Lashkar gah to Nawa-e-Barakzaye,0.128,0.0962,22
+Khost(Matun) to Lakan,0.1259,0.087,17
+Khost to Musa khel,0.1249,0.0668,28
+Khost (Matun) to Nadir Shah kot,0.119,0.0834,27
+Herat to Zindajan,0.1152,0.0286,46
+Khost to Gurbuz,0.1152,0.0931,7
+Emam Saheb to Dasht-e- Archi,0.1151,0.0871,95
+Khost to Tani,0.1149,0.086,13
+Pul-e-Khumri to Baghlan-e-Jadid,0.112,0.0743,22
+Maydan Shahr to Nerkh,0.1094,0.1042,8
+Maydan Shahr to jalrez,0.108,0.087,25
+Khost to Jaji Maydan,0.1079,0.0332,25
+Gardez to Zurmat,0.1059,0.048,22
+Maydan Shahr to Saydabad,0.1046,0.0453,43
+Gardez to Shawak,0.1035,0.0359,29
+Gardez Airport Road,0.103,0.0845,6
+Daulat to Alisheng,0.1029,0.085,18
+Nahr-e-Saraj to Nadali,0.1029,0.0761,28
+Pul-e- Alam to Gardiz,0.1013,0.0286,66
+Gardez to Sayed karam,0.1005,0.0402,22
+Daman to Tarang wa jeldak,0.1001,0.0156,44
+Pul-e-Khumri to Doshi,0.099,0.0401,43
+Andkhoy to Dawlat abad,0.0961,0.035,63
+Herat to Injil,0.0961,0.0958,2
+Andkhoy to Qaram qol,0.096,0.0903,4
+Ghazni to Saydabad,0.0957,0.0203,56
+Qala-e-Naw to Herat,0.0956,0.021,138
+Andkhoy to Qurghan,0.0954,0.0952,4
+Herat to Kushk,0.0954,0.0271,50
+Injil to Guzara,0.0951,0.0519,11
+Andkhoy to Border,0.095,0.0395,77
+Sheberghan to Andkhoy,0.0949,0.026,72
+Andkhoy to Khan-e-Char Bagh,0.0949,0.0776,12
+Dawlat shahi to Du Ab,0.0928,0.0551,30
+Herat to Islam Qala,0.0928,0.0127,124
+Gardez To Deh Yak,0.0925,0.0189,58
+Khwaja Ghar to Dasht-e-Archi,0.0923,0.0593,44
+Gardez to Sar Rawzeh,0.092,0.0187,53
+Kandahar to Arghestan,0.0916,0.0147,77
+Mando Zayi to Nadir Shah kot,0.0915,0.087,17
+Mando Zayi To Nader Shah Kot,0.0912,0.0867,15
+Almar to Qaysar,0.0907,0.0219,29
+Qaysar to Ghormach,0.0905,0.0123,49
+Nesh to Dehrawud,0.0903,0.0841,8
+Mando Zayi To Tani,0.0897,0.0838,10
+Khost (Matun) to Border,0.0883,0.0778,18
+Kunduz to Ali Abad,0.0872,0.038,27
+Shamal to Nadir Shah kot,0.0871,0.0145,17
+Khost to Tere Zayi,0.0865,0.0778,21
+Shah Wali Kot ot Tirin Kot,0.0865,0.005,112
+Nader Shah Kot To Tani,0.086,0.0803,14
+Mando Zayi to Qalandar,0.0848,0.0346,30
+Gurbuz to tani,0.0842,0.08,10
+Gurbuz to Border,0.084,0.0563,60
+Bak To Sabari,0.0837,0.0639,11
+Kunduz to Char Darah,0.0827,0.0679,7
+Zaranj to Delaram,0.0826,0.0168,200
+Delaram to Khash rod,0.0824,0.0219,19
+Emam Saheb to Border,0.0819,0.0638,34
+Lashkar gah to Garm Sare,0.0818,0.0333,64
+Ghazni to Khwaja Umari,0.0818,0.0312,14
+Ghazni to Muqur,0.0817,0.0111,96
+Bak To Tere Zayi,0.0816,0.0592,27
+Qezel Qala to Emam Saheb,0.0803,0.0519,24
+Pul-e-Khumri to Aibak,0.0799,0.0292,69
+Jalalabad to Chaparhar,0.0792,0.0279,20
+Ghazni to Waghaz,0.0784,0.0166,28
+Jalalabad to Torkham,0.0782,0.0109,82
+Surobi to Jalalabad,0.0777,0.0094,78
+Pachiragam to Deh Bala,0.0773,0.0548,30
+Tani to Border,0.0771,0.0187,42
+Ghazni to Sharan,0.077,0.0129,50
+Ghazni Deh yak,0.0761,0.0365,22
+Khost(Matun) to Border,0.0758,0.0745,3
+Chak to Saydabad,0.0756,0.0222,23
+Kunduz to Qezel Qala / Sherkhan Bandar,0.0753,0.028,60
+Jani khel to Sabari,0.0752,0.0209,19
+Gardez To Sayed Karam,0.0748,0.0412,15
+Lakan to Border,0.0747,0.0518,13
+Tere Zayi to Border,0.0741,0.0085,88
+Kunduz to Emam Sahab,0.0727,0.0539,21
+Khan Abad to Ali Abad,0.0723,0.0424,29
+Khan-e-Char Bagh to Khamyab,0.0718,0.0111,59
+Khan-e-Char Bagh to Border,0.0718,0.0235,29
+Baghlan-e-jadid to Ali Abad,0.0715,0.0217,50
+Baghlan-e-Jadid to Nahrin,0.0714,0.0434,41
+Nahrin to Khwaja Hejran,0.0712,0.0402,12
+Kunduz to Khan Abad,0.0709,0.0546,24
+Nahrin to Burka,0.0705,0.0312,16
+Jalalabad to Kuzkunar,0.0693,0.0157,41
+Dasht-e-Bachi,0.069,0.0591,9
+Khan Abad to Bangi,0.0685,0.0525,22
+Shamalzay to Atghar,0.0684,0.0403,31
+Arghestan to Maruf,0.0682,0.0064,66
+Maruf to Atghar,0.0682,0.0675,18
+Pul-e- Alam to Baraki barak,0.0673,0.0568,9
+Kunduz to Qala-e-Zal,0.0667,0.0165,66
+Pul-e-Khumri to Dahana-e-Ghory,0.0659,0.0569,16
+Khwaja Ghar to Kunduz,0.0659,0.0511,69
+Achin to Border,0.0636,0.0446,14
+Saydabad to Baraki Barak,0.0627,0.0245,24
+Rodat to Deh bala,0.0626,0.045,18
+Deh Bala to Border,0.0624,0.0577,19
+Maiwand to Khakrez,0.0623,0.0189,65
+Chaparhar To Rodat,0.062,0.0125,22
+Kunduz Airport Road,0.062,0.0439,10
+Sukh rod to Sherzad,0.0617,0.0382,24
+Deh yak to Zurmat,0.0607,0.0178,21
+Pul-e-Alam to Mohammad Agha,0.0605,0.0208,22
+Bamyan Airport Road,0.0592,0.0591,2
+Khowgiani to Border,0.0588,0.0209,36
+Kabul to Paghman,0.0588,0.0475,33
+Bamyan to Shibar,0.0584,0.0105,40
+Bamyan to Yakawlang,0.0576,0.0059,29
+Sherzad to Border,0.0575,0.0071,53
+Ghazni to Wali Mohammad Shaid,0.0572,0.0487,12
+Ali Abad to Char Darah,0.0569,0.0498,4
+Char Darah to Khulm,0.0568,0.0058,105
+Jalrez to Paghman,0.0566,0.0358,43
+Jalrez to hesa-e-awale Behsud,0.0565,0.0298,38
+Sorobi to Tagab,0.0565,0.0104,28
+Nijrab to Tagab,0.0564,0.0303,14
+Shibirghan to Sarpul,0.0564,0.0125,47
+Tagab to Alasay,0.056,0.032,11
+Bagrami to Surobi,0.0553,0.0155,54
+Mahtarlam to Alingar,0.0531,0.0222,27
+Faiz abad to Keshm,0.053,0.0134,98
+Faizabad to Yaftal-e-Sufla,0.0529,0.0319,31
+Kabul to Deh sabz,0.0528,0.0457,12
+Ghazni to Nawur,0.0527,0.0069,100
+Darwaz Bala toShighnan,0.0526,0.0235,164
+Dahana-e-Ghory to Khuram wa Sarbagh,0.0525,0.0123,54
+Surkh rod to Khugiani,0.0524,0.0344,23
+Faiz Abad to Kohetan,0.0524,0.0181,51
+Bangi to Eshkmesh,0.0518,0.0198,46
+Wali Mohammad Shaid to Jaghatu,0.0517,0.035,12
+Faiz abad to highway,0.0514,0.0432,4
+Mehtarlam to Alisheng,0.0513,0.0314,17
+Shah wali kot to Nesh,0.0511,0.0084,59
+Sheberghan to KHwaja Dokoh,0.0509,0.0103,18
+Kabul to Musayi,0.0503,0.0466,10
+Sheberghan to Qosh Tepa,0.05,0.0029,68
+Pul-e-Alam to Khoshi,0.0497,0.0163,19
+Taluqan to Baharak,0.0493,0.0271,16
+Baharak to Khwaja Ghar,0.0491,0.0462,29
+Baraki barak to Charkh,0.049,0.0272,20
+Sherzad to hesarak,0.0483,0.0245,37
+Dasht-e-Qala to Khqaja Ghar,0.0482,0.0431,18
+Shakardara to Paghman,0.0481,0.0384,13
+Andar to Giro,0.0475,0.0121,26
+Khwaja Ghar to Rostaq,0.0468,0.0253,47
+Faiz abad to Argo,0.0464,0.0409,19
+Faiz Abad to Khash,0.0463,0.0328,32
+Faizabad to Bahrak,0.0461,0.0304,39
+Khan Abad to Eshkmesh,0.0461,0.0179,37
+Andar to Sharan,0.0459,0.0308,7
+Sherzad to Hesarak,0.0458,0.0278,11
+Ghazni to Andar,0.0458,0.0203,18
+Qarabagh,0.0456,0.0259,19
+Urgun to Ziruk,0.0455,0.0096,27
+Charkh to Kharwar,0.0455,0.017,18
+Urgun to Sarobi,0.0455,0.0109,21
+Chora to Gizab,0.0454,0.006,77
+Sharan to Zurmat,0.0454,0.0103,40
+Sar Rawzeh to Urgun,0.0454,0.0094,22
+Guzara to Pashton Zarghun,0.0453,0.0301,46
+Guzara to Adraskan,0.0442,0.0135,59
+Herat to Obe,0.0441,0.0268,90
+Khowgiani To Pachier Agam,0.044,0.036,12
+Herat Airport Road,0.044,0.0439,2
+Ab kamari to Border,0.044,0.0239,17
+Urgon to Gyan,0.0439,0.0092,26
+Urgun To Border,0.0435,0.01,7
+Ab kamari to border,0.0434,0.0221,21
+Chahar Asyab to Mohammad Agha,0.0433,0.0233,19
+Argo to Darayem,0.0433,0.0261,21
+Bagrami to Khak-e-Jabbar,0.0423,0.0306,14
+Surobi To Hesarak,0.0414,0.026,9
+Dara to Nejrab,0.0413,0.0061,42
+Deh Sabz to Koh-e-Safi,0.0412,0.0099,41
+Karaiz-e-Mir,0.041,0.0389,7
+Taluqan to Bngi,0.041,0.0195,26
+Dah Sabz to Shakardara,0.041,0.0375,18
+Spinboldak to Border,0.041,0.0345,7
+Ghazni to Zurmat,0.0409,0.0125,52
+Dasht-e-Qala to Khwaja Bahwddin,0.0409,0.0347,22
+Darwaz to Darwaz Bala,0.0406,0.0118,45
+Mahmud Raqi to Nijrab,0.0403,0.0139,27
+Jalalabad to Behsud,0.0403,0.0284,5
+Sarkani to Marawara,0.0397,0.0318,12
+Qarabagh to Jaghuri,0.0397,0.0053,70
+Kabul to Shakar Dara,0.0396,0.0319,5
+Darqad to Khwaja Bahwddin,0.0396,0.0282,19
+Asadabad to Shigal wa sheltan,0.0394,0.028,18
+Kabul to Mehtarlam,0.0394,0.0223,21
+Qala-e-naw to Qades,0.0393,0.014,36
+Khwaja Bahwddin to Rostaq,0.0388,0.0057,37
+Spin boldak to Shor abak,0.0386,0.0031,133
+Shindand to Khak-e-safid,0.0383,0.0032,89
+Spin Boldak to Border,0.0376,0.002,114
+Shindan to Anar dara,0.0369,0.0034,158
+Spin boldak to Arghestan,0.0368,0.0032,72
+Qala-e-naw to Murghab,0.0368,0.0074,94
+Nili to Gizab,0.0365,0.0081,48
+Muqur to Qadis,0.0365,0.0126,43
+Asadabad to Marawara,0.0364,0.0327,4
+Chaparhar to Pachiragam,0.0363,0.0314,13
+Marawara to Border,0.0363,0.0252,16
+Shah wali kot to Mianshin,0.0362,0.0064,95
+Qala-e-naw to Muqur,0.036,0.0285,6
+Asadabad to Watapur,0.0359,0.0276,10
+Qala-e-naw to Ab kamari,0.0356,0.0254,16
+Adraskan to Shindand,0.0352,0.0087,23
+Surkhe Parsa to Jalrez,0.0349,0.0193,46
+Farah to Anar dara,0.0342,0.0055,64
+Trinkot to Khas Uruzgan,0.0334,0.0046,91
+Kalakan to Qarabagh,0.033,0.0192,9
+Qarabagh to Chaharikar,0.0326,0.0126,16
+Farah Airport Road,0.0326,0.0233,7
+Gizab to Shahrestan,0.0324,0.0059,48
+Asadabad to Sarkani,0.0324,0.029,5
+Sar-e-pul to Sayad,0.0321,0.0186,14
+Sarkani to Border,0.032,0.0172,38
+Shor tepa to Qarqin,0.0319,0.0051,50
+Sauyed karam to Musa khal,0.0319,0.0221,15
+Farah to Bala buluk,0.0319,0.0076,64
+Farah to Bakwa,0.0317,0.0026,81
+Qala-e-Naw to Kushk-e-Kohna,0.0314,0.0052,67
+Sarkani to Khas kunar,0.0312,0.0096,30
+Taloqan to Kalafgan,0.0312,0.0073,48
+Mehtarlam to Qaeghayi,0.0312,0.0193,18
+Asadabad to Narang,0.0311,0.0276,14
+Solgarah to Kushendah,0.0306,0.0131,24
+Ghazni to Zana khan,0.0304,0.0096,30
+Sar-e-Pul to Sozma Qala,0.03,0.0127,33
+Maywand to Ghorak,0.0299,0.013,36
+Qarghayi To Alingar,0.0295,0.015,26
+Jurm to Khash,0.0295,0.0119,16
+Faiz abad to Aqcha,0.0293,0.0142,28
+Trinkot to Chora,0.0292,0.0092,31
+Baharak to Warduj,0.0292,0.0114,33
+Baharak to Shuhada,0.0288,0.0074,37
+Bil Cheragh to Garziwan,0.0286,0.0119,19
+Deh Salah to Khwaja hejran,0.0284,0.0086,36
+Sayed karam to Lija Ahmad khel,0.0283,0.0117,24
+Khwaja Hejran to Khowst wa Fereng,0.0281,0.0157,32
+Shinwar to Achin,0.0276,0.0194,14
+Qarabagh to Estalef,0.0271,0.0121,10
+Taloqan Airport Road,0.027,0.027,2
+Tirin Kot Airport Road,0.0269,0.0255,2
+Taluqan to Namak Ab,0.0266,0.0187,20
+Sholgara to Sozma Qala,0.0265,0.004,65
+Jalalabad to Surkh rod,0.0265,0.0227,11
+Kot to Achin,0.0261,0.0168,11
+Delaram to Balabluk,0.026,0.0019,120
+Lashkar gah to Sangin,0.026,0.0201,38
+Ghoryan to Border,0.0256,0.0031,259
+Du Ab to Nurgeram,0.0256,0.0215,31
+Ghoryan to Islam Qala,0.0254,0.0073,51
+Qalat to Mizan,0.0252,0.0058,56
+Hesaeak to Azra,0.0249,0.011,16
+Zindajan to Ghoryan,0.0248,0.0124,23
+Bakwa to Delaram,0.0247,0.0046,47
+Nurgeram To Parun,0.0245,0.01,53
+Du Ab to Mandol,0.0244,0.0092,28
+Parun to Du Ab,0.0243,0.0048,74
+Sayed Karam To Zadran,0.0242,0.0092,26
+Jalalabad Airport Road,0.0241,0.0241,1
+Mahmud Raqi to Hesa-e-Awale Kohestan,0.0241,0.0153,16
+Delaram to Gulistan,0.024,0.0031,50
+Burka to Guzargahi Nur,0.0239,0.0092,41
+Namak Ab to Chal,0.0235,0.0231,17
+Eshkmesh to Chal,0.0232,0.0185,28
+Dawlat abad to Shor Tepa,0.023,0.007,36
+Darwaz to Kofab,0.023,0.0054,98
+Darwaz Bala to Shighnan,0.0228,0.0022,107
+Narang to Chawkay,0.0228,0.0066,18
+Lashkar gah to Reg (Khaneshin),0.0224,0.0047,94
+Chaharikar to Jabalussaraj,0.0221,0.0105,15
+Qalat to Tarnak wa Juldak,0.0218,0.0038,63
+Shahr-e-Buzorg to Yaftal-e-Sufla,0.0215,0.0128,34
+Bati Kot to Highway,0.0213,0.0198,2
+Chaharikar to Hesa-e-Awale Kohestan,0.0212,0.0134,18
+Yaftal-e-Sufla to Yawan,0.021,0.0034,32
+Aqcha,0.0207,0.0143,7
+Qalat to Shah joy,0.0204,0.004,63
+Dara-e-Suf Payin to Dara-e-Suf Bala,0.0202,0.0063,33
+Qalat to Shinkay,0.0201,0.0036,63
+Aybak to Pul-e-khumri,0.02,0.0143,6
+Watapur to Dara-e-pech,0.02,0.0118,18
+Shigal Wa Sheltan To Waygal,0.02,0.0059,40
+Shigal wa sheltan to Barkunar,0.0197,0.0126,13
+Bagram to Mahmud-e-Raqi,0.0197,0.015,21
+Shigal wa Shel tan to Border,0.0194,0.0157,16
+Sayd khel to Jabalussaraj,0.0194,0.0172,3
+Aybak to Hazrat-e-Sultan,0.0191,0.0083,21
+Bahrak to Jurm,0.0189,0.0125,15
+Aqcha to Mardyan,0.0188,0.0115,33
+Qalat to Arghandab,0.0186,0.0033,59
+Murghab to Ghormach,0.0184,0.0024,61
+Murghab to Border,0.0182,0.0027,36
+Obe to Chisht-e-sharifzz,0.0178,0.0028,54
+Chisht-e-sharif to Shahrak,0.0178,0.0015,68
+Charkh to Gardez,0.0176,0.0108,12
+Chighchiran to Du Layna,0.0174,0.0015,63
+Kohsan to Border,0.0174,0.002,126
+Farah to Pusht Rod,0.0167,0.0114,15
+Aybak to Khulm,0.0164,0.0031,64
+Muqur to Nawa,0.0164,0.0019,52
+Bagram to Koh-e-Safi,0.0164,0.0055,16
+Chaghcharan to Chahar Sadra,0.0163,0.0012,70
+Muqur to Gelan,0.0162,0.0065,15
+Washir to Delaram,0.0161,0.0036,40
+Ali Khel (Jaji) to Border,0.0161,0.0045,26
+Kufab  to  khwahan,0.016,0.0098,42
+Bagram to Highway,0.016,0.0089,12
+Bilchragh to Sayad,0.0159,0.0038,87
+Shinwar to Nazian,0.0157,0.0148,16
+Zari to Gosfandi,0.0156,0.0101,26
+Alinghar To Nurgeram,0.0154,0.0067,10
+Maydan Shahr to Chak,0.0154,0.0049,24
+Chamtal to Faiz abad,0.0154,0.0098,25
+Alingar to Nurgeram,0.0153,0.0076,13
+Aybak to Dara-e-suf payin,0.0153,0.0029,92
+Maimana to Almar,0.0153,0.007,28
+Shirin tagab to Dawlat abad,0.0152,0.0066,15
+Jaghatu to Khwaja Umari,0.0151,0.006,14
+Anar dara to Qala-e-Kah,0.0151,0.0024,48
+Maimana to Khwaja Sabzposh,0.0151,0.0069,23
+Shah joy to Arghandab,0.0151,0.0056,41
+Maimana to Kohestan,0.0149,0.0019,74
+Shinwar to Highway,0.0148,0.0138,18
+Dand wa Patan to Ali Khel (Jaji),0.0147,0.0053,31
+Chighchiran to Dawlatyar,0.0146,0.0014,58
+San Charak to Gosfandi,0.0145,0.01,11
+Suzma Qala  to San Charak,0.0145,0.0054,7
+Jabalussaraj to Sayd khel,0.0145,0.0123,4
+Khak-e-Safid to Anar dara,0.0144,0.0027,45
+khoshi to Ali Khel (Jaji),0.0144,0.0034,33
+Maymana to Border,0.0144,0.0022,65
+Farah to Lash-e-juwayn,0.0143,0.0011,76
+Estalef to Highway,0.0143,0.0085,7
+Ofian-e-Sharif,0.0143,0.0132,2
+Aqcha to Mangijak,0.0142,0.0096,12
+Dara-e-Suf Payin to Kushndah,0.0141,0.0026,39
+Burka to Eshkmesh,0.014,0.0052,23
+Sangin to Kajaki,0.0139,0.002,52
+Shinwar to Durbaba,0.0139,0.0086,25
+Kofab to Shaki,0.0138,0.0106,23
+Chaghcharan Airport Road,0.0138,0.0106,3
+Sholgareh to Zari,0.0134,0.0036,33
+Dushi to Tala Wa Barfak,0.0134,0.0023,56
+Yosuf khal to Yahya khal,0.0134,0.0068,9
+Sorobi to Hesarak,0.0132,0.007,40
+Yahya khal to Omna,0.0132,0.0038,17
+Shinkay to Shamalzay,0.0131,0.0052,28
+Shah joy to Gelan,0.013,0.0036,28
+Dowshi to Khenjan,0.0128,0.0062,20
+Jurm ot Yamgan,0.0127,0.0022,37
+Khwahan to Raghistan,0.0124,0.001,61
+Khwahan Airport Road,0.0124,0.0124,5
+Rodat to Kot,0.0124,0.011,7
+Kamdash to Barg-e-Matal,0.0124,0.0035,29
+Maymana Airport Road,0.0124,0.0119,2
+Darayem To Jorm,0.0123,0.0035,52
+Jalalabad to Qarghayi,0.0123,0.0098,11
+Sharan to Yosuf Khal,0.0122,0.0053,16
+Khoshi to Azra,0.0121,0.0021,59
+Guzargahi Nur to Khowst Wa Fereng,0.012,0.0112,27
+Sharan to Sar Rawzeh,0.012,0.0044,38
+Warsaj to Khowst wa Freng,0.012,0.009,50
+Khakrez to Ghorak,0.0117,0.0018,41
+Rodat to Highway,0.0117,0.0091,7
+Sar-e-Pul to San Charak,0.0116,0.0051,44
+Chamkani to Jani khel,0.0116,0.0068,16
+Arghandab to Day chopan,0.0116,0.0029,40
+Hesarak to Azra,0.0116,0.0093,6
+Dara-e-Pech to Chapa Dara,0.0116,0.0077,19
+Chamkani to Dand wa Patan,0.0115,0.0066,19
+Lija Ahmad khel to Ali Khel (Jaji),0.0115,0.0076,14
+Kajaki to Ghorak,0.0115,0.0031,31
+Hesa-e- Awale Kohestan to Koh Band,0.0114,0.0077,19
+Kohsan to Gulran,0.0114,0.0015,64
+Aybak to Khuram wa Sarbagh,0.0114,0.0029,29
+Sauyed karam to Musa khel,0.0113,0.0038,32
+Chora to Khas Uruzgan,0.0113,0.002,60
+Kohsan to Herat,0.0112,0.007,9
+Lija Ahmad khel to Chamkani,0.0109,0.007,19
+Shahr-e-Buzorg to  Chah Ab,0.0109,0.0049,55
+Qarabagh to Giro,0.0108,0.0059,28
+Parun to Kamdesh,0.0106,0.0017,61
+Barkunar to Ghazi Abad,0.0104,0.0056,13
+Sar-e-Pul to Kohestanat,0.0104,0.0029,71
+Kalakan To Deh Sabz,0.0103,0.0036,23
+Ghazi Abad to Nari,0.0103,0.003,18
+Highway to Kot,0.0102,0.0088,13
+Jabalussaraj,0.0101,0.0101,1
+Kamdash to Nari,0.0101,0.0019,41
+Maimana to Bilchragh,0.01,0.0038,46
+Mir Bachakot to Kalakan,0.01,0.0065,6
+Ghazi Abad To Waygal,0.0099,0.0015,48
+Jabalussaraj to Hesa-e-Awale Kohestan,0.0097,0.0088,10
+Mardyan to Qarqin,0.0097,0.0015,48
+Warduj to Zebak,0.0096,0.0024,42
+Jabalussaraj to Salang,0.0095,0.0042,9
+Qala-e-Zal to Khulm,0.0095,0.0016,47
+Jalalabad To Kama,0.0091,0.007,15
+Wama to Chapa Dara,0.009,0.0034,15
+Qarghayi to Kuz Kunar,0.0088,0.0064,19
+Gyan To Bermel,0.0088,0.0032,39
+Qades to Jawand,0.0088,0.0011,93
+Shahid-e-Hassas to Giti,0.0085,0.001,79
+Salang to Kenjan,0.0083,0.0009,60
+Kakar to Jaghuri,0.0081,0.0011,48
+Wor Mamay to Border,0.008,0.0025,68
+Jaghuri to Malestan,0.0079,0.0013,49
+Jami khel to Musa khel,0.0078,0.0049,14
+Jabalussraj to Shutul,0.0078,0.0035,8
+Kharwar to Zana khan,0.0077,0.0038,27
+Khwaja Sabzposh to Shirin tagab,0.0076,0.0037,20
+Shawak to Zadran,0.0076,0.0059,10
+Dara-e-Nur To Alingar,0.0076,0.0028,32
+Ziruk to Nika,0.0074,0.0052,6
+Khenjan to Andarab,0.0073,0.0012,37
+Sarobi to Barmal,0.0071,0.0018,37
+Sarobi to Gomal,0.0071,0.0014,39
+Nadir Shah kot to Spara,0.007,0.0043,12
+Jalalabad To Khas Kunar,0.0069,0.0028,41
+Durbaba to Highway,0.0069,0.0045,18
+Darqad to Border,0.0069,0.0041,8
+Durbaba to Border,0.0068,0.0061,4
+Ziruk to Spara,0.0068,0.0027,28
+Mangijak to Khamyab,0.0068,0.0006,73
+Charakar to Shinwari,0.0067,0.004,21
+Chamkani to Border,0.0067,0.0046,13
+Markaz-e-Behsud to Day Mirdad,0.0066,0.0006,64
+Barkunar to Dangam,0.0062,0.0044,9
+Pusht Rod to Khak-e-safid,0.0062,0.0017,43
+Day Mirdad to Chak,0.0061,0.002,45
+Giro to Zarghun Shahr,0.0061,0.0019,41
+Zadran to Shamal,0.006,0.0044,17
+Chak to Jaghatu,0.0058,0.0023,32
+Estalef to Farza,0.0058,0.0053,4
+Mazar-e-sharif Airport Road,0.0058,0.0054,3
+Shindand,0.0058,0.004,12
+Mir Bachakot to Farza,0.0058,0.005,7
+Feroz Nakhchir to Hazrat Sultan,0.0058,0.0012,32
+Goshta To Lal Pur,0.0057,0.0041,31
+Syah Gerd to Shekh Ali,0.0057,0.0021,34
+Jalalabad to Kama,0.0057,0.0047,10
+Chawkay to Norgal,0.0056,0.0021,17
+Mata khan,0.0056,0.0052,3
+Kushk to Torghundi,0.0056,0.0008,54
+Shamalzay to Border,0.0056,0.0007,54
+Dawlat Abad to Shiberghan,0.0055,0.0009,79
+Kakar to Khas Uruzgan,0.0054,0.0015,46
+Zarghon Shahr to Jani khal,0.0054,0.0028,14
+Waygal to Dara-e-Pech,0.0054,0.0017,26
+Jani khal to Waza khah,0.0053,0.0006,62
+Nurgal To Dara-e-Nur,0.0052,0.0015,31
+Sar Hawza To Nika,0.0052,0.0026,26
+Kuz kunar to Norgal,0.0052,0.0026,20
+Jani khal to Dila,0.005,0.001,32
+Keshem to Darayem,0.005,0.0022,34
+San Charak to Balkh Ab,0.005,0.0006,67
+Khas Uruzgan to Malestan,0.0049,0.0006,65
+Dand wa Patan to Border,0.0049,0.0027,46
+Yosuf khal to Zarghon Shahr,0.0048,0.0018,28
+Kama to Goshta,0.0048,0.0031,17
+Mata khan to Sar Rawzeh,0.0047,0.0033,16
+Kushk-e-kohna to Torghundi,0.0047,0.001,39
+Yosuf Khel To Andar,0.0045,0.0037,25
+Gelan to Jaghuri,0.0045,0.0007,49
+Lal pur to Highway,0.0044,0.0041,3
+Khanaqa,0.0043,0.0037,4
+Qalat to Arghestan,0.0042,0.0011,62
+Shakar Dara to Gul Dara,0.0042,0.0038,6
+Lal Pur To Border,0.0041,0.0014,17
+Omna to Urgun,0.0041,0.0027,20
+Muqur to Dila,0.004,0.0014,29
+Rostaq to Chah Ab,0.0038,0.0014,25
+Dila to Nawa,0.0037,0.0009,19
+Teshkan To Yamagan,0.0037,0.0009,69
+Zana khan to Saydabad,0.0036,0.0033,10
+Shaki to Darwaz,0.0036,0.0008,42
+Khwaja Bahwddin to Yangi Qala,0.0036,0.0016,16
+Muhmand Dara to Border,0.0035,0.0023,30
+Sharan to Gomal,0.0035,0.0025,25
+Parun to Wama,0.0035,0.0005,44
+Jani khel to Dila,0.0035,0.0011,25
+Khakrez to Nesh,0.0034,0.002,19
+Shinkay to Naw Bahar,0.0034,0.0014,42
+Bermel To Border,0.0034,0.0005,62
+Jaji Maydan to Border,0.0034,0.0025,39
+Hazrat-e-Sultan to  Baghlan-e-Jadid,0.0034,0.0007,89
+Deh Salah to Pul-e-Hesar,0.0033,0.0019,18
+Zaranj to Kang,0.0032,0.0017,16
+Shinwari to Syah Gerd,0.0031,0.0014,19
+Gulran to Border,0.003,0.0004,137
+Qala-e-Kah to Border,0.003,0.0008,42
+Urgun To Spera,0.0029,0.0023,22
+Spera To Gyan,0.0028,0.0013,29
+Kang to border,0.0028,0.0006,43
+Kang to Chakhansur,0.0028,0.0008,19
+Bala buluk to Adraskan,0.0028,0.0008,107
+Taywarah to Pasaband,0.0027,0.0003,51
+Kuzkunar to Dara-e-Noor,0.0027,0.0017,7
+Darayem to Teshkan,0.0027,0.0018,10
+Dangam to Border,0.0027,0.0008,38
+Khak-e-Jabbar to Azra,0.0026,0.0012,42
+Pur Chaman to taywara,0.0025,0.0002,87
+Khas Kunar to Border,0.0024,0.0022,21
+Farah to Ship Koh,0.0024,0.0004,44
+Chawkay To Khas Kunar,0.0024,0.0015,4
+Goshta To Border,0.0023,0.0007,30
+Andarab to Deh salah,0.0022,0.0014,8
+Zadran To Musa Khel,0.0022,0.002,12
+Syah Gerd to Surkhe Parsa,0.0022,0.0017,5
+Hazrat-e-Sultan to Khulm,0.0021,0.001,15
+Nawar to Dila,0.0021,0.0003,53
+KHwaja Dokoh to highway,0.002,0.0016,5
+Qosh tepa to Darzab,0.0019,0.0012,11
+Zaranj to Char Burjak,0.0019,0.0003,89
+Ruy-e-Du Ab to Dowshi,0.0019,0.0004,71
+Parun to Waygal,0.0019,0.0004,42
+Koran wa Monjan to Barg-e-Matal,0.0018,0.0002,64
+Barg-e-Matal to border,0.0018,0.0006,19
+Khuram wa Sarbagh to Ruy-e-Duab,0.0018,0.0001,56
+Mazar-e-Sharif to Hayratn,0.0017,0.0009,51
+Omna to Gomal,0.0017,0.0008,55
+Zebak to Eshkashem,0.0017,0.0004,28
+Shighnan to Eshkashem,0.0017,0.0002,95
+Ishkashem to Wakhan,0.0017,0.0002,73
+Keshem to Teshkan,0.0017,0.0009,24
+Chah Ab to Yangi Qala,0.0017,0.0009,22
+Shindand to farsi,0.0017,0.0002,74
+Kran wa Munjan to Zebak,0.0016,0.0001,91
+Yawaan To Raghistan,0.0016,0.001,16
+Waza Khuh To Gomal,0.0016,0.0002,58
+Kamdesh to Border,0.0016,0.0004,62
+Gomal To Bermel,0.0015,0.0004,49
+Shindand to Border,0.0015,0.0002,199
+Khulm to Kaldar,0.0015,0.0002,101
+Paryan to Kran Wa Munjan,0.0015,0.0001,93
+Bamyan to Tala wa barfak,0.0014,0.0002,76
+Omna To Gomal,0.0014,0.0003,38
+Waza khah to Wor Mamay,0.0014,0.0002,34
+Nawa To Waza Khuh,0.0014,0.0002,53
+Shor Abak to Border,0.0014,0.0003,106
+Ab band,0.0013,0.0013,4
+Zaranj Airport Road,0.0013,0.0012,13
+Nili to Shahrestan,0.0013,0.0005,56
+Shahrak to Du Layna,0.0013,0.0001,47
+Waza khah to Turwo,0.0012,0.0002,37
+Nili to Khadir,0.0012,0.0005,40
+Surkhe Parsa to Hesa-e-Awale Behsud,0.0012,0.0002,66
+Taluqan to Farkhar,0.0012,0.001,13
+Ab band to Dila,0.0012,0.0005,42
+Shorabak to Rag,0.0011,0.0001,70
+Gyan To Border,0.0011,0.0007,20
+Adraskan to Farsi,0.0011,0.0002,97
+Farkhar to Warsaj,0.001,0.0002,47
+Mazar-e-Sarif to Marmol,0.001,0.0005,19
+Keshem to Tagab,0.001,0.0004,53
+Jaji to Border,0.001,0.001,1
+Zarghun Shahr to Gomal,0.0009,0.0003,62
+Hazrat-e-Sultan to Char Kent,0.0008,0.0002,70
+Shutul to Onaba,0.0008,0.0007,7
+Gomal to Barder,0.0008,0.0001,50
+Char Burjak to Deshu,0.0008,0.0001,176
+Farah to Chakhansur,0.0007,0.0001,102
+Darzab to Bilchragh,0.0007,0.0005,15
+Dawlatyar to Lal Wa Sarjangal,0.0007,0.0002,58
+Eshkashem to Shuhada,0.0007,0.0004,28
+Yamgan to Kran Wa Munjan,0.0007,0.0001,58
+Jaghuri to Nawur,0.0006,0.0003,37
+Ajrestan to Khas Uruzgan,0.0006,0.0002,37
+Kohestan to Yawan,0.0006,0.0003,22
+Waza Khuh To Nawa,0.0006,0.0001,38
+Kushk to Gulran,0.0006,0.0001,46
+Musa Qala to Kajaki,0.0005,0.0002,29
+Nahr-e-Saraj to Washir,0.0005,0.0002,50
+Onaba to Rukha,0.0005,0.0004,11
+Nawzad to Musa Qala,0.0005,0.0002,27
+Nari to Border,0.0005,0.0002,48
+Keshem to Kalafgan,0.0004,0.0003,18
+Day chopan to Kakar,0.0004,0.0003,42
+Koran Wa Monjan To Warsaj,0.0004,0.0001,83
+Shahrak to Tolak,0.0004,0.0,48
+Nawur to Malestan,0.0003,0.0001,69
+Barmal to Border,0.0003,0.0003,5
+Fairuz Nakhjer to Marmol,0.0003,0.0001,57
+Shekh Ali to Shibar,0.0003,0.0001,46
+Wor Mamay To Gomal,0.0003,0.0001,43
+Gulistan to Pur Chaman,0.0003,0.0,49
+Rostaq to Keshem,0.0003,0.0002,33
+Bilchragh to Kohestanat,0.0002,0.0001,27
+Koran wa Monjan Airport Road,0.0002,0.0001,12
+Yakawlang to Balkh Ab,0.0002,0.0001,17
+BAmyan to Hesa-e-Awale Behsud,0.0002,0.0001,50
+Barg-e-Matal to Border,0.0002,0.0001,44
+Keeran wa Munjan_Mandol,0.0002,0.0,94
+Rukha to Bazarak,0.0002,0.0001,7
+Baghran to Kajran,0.0002,0.0001,62
+Naw bahar to Nawa,0.0002,0.0001,31
+Musa Qala to Baghran,0.0002,0.0001,95
+Shahrestan to Ajrestan,0.0002,0.0001,81
+Chahar burjak to Border,0.0002,0.0,55
+Shahrestan to Waras,0.0002,0.0,69
+Yamgan To Warsaj,0.0001,0.0,55
+Lash-e-juwayn to Chakhansur,0.0001,0.0,62
+Fairuz Nakhjer to Hazrat-e-Sultan,0.0001,0.0001,13
+Chahar Burjak to border,0.0001,0.0,61
+Khader to Ashtarlay,0.0001,0.0,35
+Markaz-e-Behsud to Hesa Awal Behsud,0.0001,0.0,59
+Bazarak to Khenj (Hes-e-Awal),0.0001,0.0,26
+Nawa To Border,0.0001,0.0,69
+Zebak to Border,0.0001,0.0,52
+Pasaband to Baghran,0.0001,0.0,76
+Mandol To Parian,0.0001,0.0,51
+Giti to Kejran,0.0001,0.0,36
+Bazarak to Dara,0.0001,0.0,11
+Parun to kran wa Munjan,0.0,0.0,39
+Khulm to Border,0.0,0.0,33
+Kajran to Pasaband,0.0,0.0,67
+Shighnan Airport Road,0.0,0.0,2
+Shorabak to Border,0.0,0.0,13
+Farah to Qala-e-Kah,0.0,0.0,17
+Khenj to Parian,0.0,0.0,37
+Markaz-e-behsud to Nawur,0.0,0.0,68
+Shahrestan to Miramor,0.0,0.0,10
+Khamyab to Qarqin,0.0,0.0,34
+Malestan to Ajrestan,0.0,0.0,39
+Saghar to Ahahrak,0.0,0.0,26
+Wakhan to Border,0.0,0.0,25
+Koran wa monjan to Border,0.0,0.0,15
+Ashtarlay to Sang-e-Takht,0.0,0.0,25
+Nawur to Ajrestan,0.0,0.0,88
+Ruy-e-Du Ab to Kahmard,0.0,0.0,32
+Kuhmard to Tala wa Barfak,0.0,0.0,35
+Tala wa barfak to Sayghan,0.0,0.0,31
+Markazi Behsud to Panjab,0.0,0.0,89
+Bamyan to Sayghan,0.0,0.0,37
+Ashtarlay to Panjab,0.0,0.0,30
+Pasaband to Du Layna,0.0,0.0,40
+Panjab to Lal Wa Sarjangal,0.0,0.0,18
+Turwo To Border,0.0,0.0,20
+Tolak to Saghar,0.0,0.0,17
+farsi ot Tolak,0.0,0.0,29
+Reg to Deshu,0.0,0.0,68
+Gomal to Border,0.0,0.0,4
+Kahmard to Sayghan,0.0,0.0,4
