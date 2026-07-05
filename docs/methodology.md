@@ -1,7 +1,7 @@
 # A Framework for Estimating Road-Blockage Probability from Conflict Events
 
 **Conflict-event → Road-Blockage (C2RB) impact model**
-Data: ACLED, Afghanistan, 2017–2026 (69,655 geocoded events) · `ACLED Data_classified.csv`
+Data: ACLED, Afghanistan, 2017–2026 (69,655 geocoded events) · `data/ACLED Data_classified.csv`
 (adds ground-truth `is_road_affected` / `is_road_blocked` labels)
 
 ---
@@ -63,7 +63,7 @@ R_eff(e) = sqrt( R_phys(s)² + R_geo(g)² ) · M_sev(e)
 
 ```
 S(n_f)   = α·(1 + n_f) + (1 − α)·(1 + ln(1 + n_f))         # blend of linear + log growth   (Eq. 2)
-M_sev(e) = clip( 1 + κ·(S(n_f)/S(n_ref) − 1), 0.5, 3.0 ) · (1 + γ_civ·c)                     (Eq. 3)
+M_sev(e) = clip( (1 + κ·(S(n_f)/S(n_ref) − 1)) · (1 + γ_civ·c), 0.5, 3.0 )                   (Eq. 3)
 ```
 
 with defaults `α = 0.15` (mostly log growth), `κ = 0.25`, `γ_civ = 0.30`. The `clip` bounds
@@ -85,8 +85,8 @@ small linear component. The **`1 +` offsets** are deliberate: they make `ln(1 + 
 at `n_f = 0` (avoiding `ln 0 = −∞`) and guarantee `S(0) = 1`, so a zero-fatality event is the
 natural baseline. Equation 2 feeds Equation 3 only through the **ratio `S(n_f)/S(n_ref)`**: an
 event is compared to a reference fatality level `n_ref` (default 1), the ratio is turned into a
-gentle multiplier by `κ`, bounded to `[0.5, 3]`, and finally bumped by `γ_civ` if civilians were
-targeted. In short: Equation 2 converts a raw body count into a *bounded, diminishing-returns
+gentle multiplier by `κ`, bumped by `γ_civ` if civilians were targeted, and the product is
+bounded to `[0.5, 3]`. In short: Equation 2 converts a raw body count into a *bounded, diminishing-returns
 severity signal* that stretches the buffer sensibly rather than mechanically.
 
 ### 2.2 Distance-decay blockage probability — *"how does it fall with distance?"*
@@ -119,7 +119,9 @@ layered on to avoid double-counting tightly-clustered events; noted as an extens
 
 ### 2.4 From points to roads
 
-We use the **WFP/AGCHO Afghanistan road network** (`afg_trs_roads_l_arazi_2023x_fixed_ segmented.shp`): **27,991 LineString segments, ~1 km each** (median 1,068 m), EPSG:4326, each
+We use the **WFP/AGCHO Afghanistan road network**
+(`data/Road Network/afg_trs_roads_l_arazi_2023x_fixed_segmented.shp`): **27,991 LineString
+segments, ~1 km each** (median 1,068 m), EPSG:4326, each
 carrying road name, class, average slope and altitude. Each segment is represented by its
 midpoint; `d_e` is the segment-to-event distance. Every segment within `r_max = 3·R_eff` of an
 event receives that event's `P(block | d_e, e)`, and segments are aggregated by noisy-OR. The
@@ -158,7 +160,16 @@ label — conflates these; the ground-truth `is_road_blocked` label separates th
 
 `P0(s) = P(is_road_blocked = yes | s)`, estimated with **Beta-Binomial empirical-Bayes
 shrinkage** (prior strength 50, anchored at the 0.87% global rate) so small-sample types
-(Grenade n=176, Suicide n=289) get stable estimates instead of noisy 0.000s. Selected results
+(Grenade n=176, Suicide n=289) get stable estimates instead of noisy 0.000s. With `k_s` blocked
+events out of `n_s` of type `s`, and `p̄` the global blocked rate, the shrunk estimate is the
+Beta posterior mean
+
+```
+P̂0(s) = (k_s + a0) / (n_s + a0 + b0),      a0 = p̄·m,  b0 = (1 − p̄)·m,  m = 50
+```
+
+so a type with few events is pulled toward `p̄` (the prior acts as `m` pseudo-events at the
+global rate) while a well-observed type keeps essentially its raw rate. Selected results
 (full 24-row table in `countries/afghanistan.yaml`), with Beta posterior 95% credible intervals:
 
 | sub_event_type                      |      n | P0 (shrunk) | 95% CrI        |
@@ -239,49 +250,56 @@ hotspot context.
 
 ## 6. Pipeline, configuration, and localization
 
-The framework runs headless through two CLI scripts, both reading a **layered** configuration:
+The framework runs headless through three CLI scripts, all reading a **layered** configuration:
 
 - **`python train.py --config countries/<name>.yaml`** — calibrates `P0(s)` on the country's
   `is_road_blocked` labels (Beta-Binomial shrinkage), writes it back into the country config, and
-  emits `artifacts/<name>/` (`metrics.json`, `model_card.md`, calibration plots). The calibrated
-  `P0` *is* the trained model; the logistic regression is run only to validate it.
+  emits `artifacts/<name>/` (`model.joblib`, `metrics.json`, `model_card.md`, calibration plots).
+  Training produces **two models for two questions**: the calibrated parametric `P0` (the
+  interpretable core that drives the spatial scorer), and a logistic-regression classifier that
+  is cross-validated for the §3.3 metrics and then refit on all rows and persisted into
+  `model.joblib` as the deployable event-level model.
 - **`python score.py --config countries/<name>.yaml --as-of <date> --window-days <n>`** — scores
   road segments via noisy-OR over the events in the window and ranks the most likely-blocked named
   roads (`road_rankings.csv`, `p_block_map.png`); falls back to a grid surface if no road layer is
   set. This is the **spatial** question: *which roads* are blocked.
 - **`python predict.py --config countries/<name>.yaml --sub-event-type … --geo-precision …`** —
   the **event-level** question: *will this event* block a road? It loads the deployable
-  `model.joblib` (a logistic-regression classifier `train.py` fits on the labels and persists
-  alongside `P0`) and returns one probability per event, for a single event or a CSV batch.
+  `model.joblib` (the classifier `train.py` fits on the labels and persists alongside `P0`) and
+  returns one probability per event, for a single event or a CSV batch.
 
 **Layered config.** Country-independent physics — `R_phys`, decay kernels, `R_geo`, the severity
 and temporal constants — lives in `params.base.yaml` and is shared by every country. Each country
-adds a small override (`countries/<name>.yaml`) carrying only its data **paths**, metric **CRS**,
-and **calibrated `P0`**. `c2rb.load_config` merges the two. To adapt the model to a new country you
-copy the override, point it at that country's ACLED export and segmented road network, and re-run
-`train.py` then `score.py` — no changes to `c2rb.py`. See `LOCALIZATION.md` for the full procedure
-(including `tools/segment_roads.py`, which cuts a raw road network into ~1 km segments).
+adds a small override (`countries/<name>.yaml`) carrying only its data **paths** and
+**calibrated `P0`** (plus an optional `crs_metric` hint for GIS preprocessing). `c2rb.load_config`
+merges the two. To adapt the model to a new country you copy the override, point it at that
+country's ACLED export and segmented road network, and re-run `train.py` then `score.py` — no
+changes to the `c2rb` package. See `docs/COUNTRY_GUIDE.md` for the full procedure (including
+`tools/segment_roads.py`, which cuts a raw road network into ~1 km segments).
 
 ### Files
 
 | File                             | Purpose                                                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `c2rb.py`                      | Framework core: config loading, label loading, calibration, radius/kernel/noisy-OR math, scorer         |
+| `c2rb/`                        | Framework core package: geometry, calibration, config, model physics, spatial scorer, classifier        |
 | `train.py` / `score.py` / `predict.py` | CLI pipeline: calibrate + save the model / per-road rankings + maps (spatial) / event-level P(blocked) |
+| `app.py`                       | Streamlit app: event-level prediction + click-to-place spatial scoring                                  |
 | `artifacts/<name>/model.joblib`  | Deployable trained model: event-level classifier + parametric `P0`                                      |
 | `params.base.yaml`             | Universal parameters:`R_phys`, decay class, `R_geo`, severity & time constants (shared by all countries) |
-| `countries/<name>.yaml`        | Per-country config: data paths, metric CRS, calibrated `P0` (written by `train.py`)                     |
-| `LOCALIZATION.md`              | Step-by-step guide to building a model for another country                                              |
+| `countries/<name>.yaml`        | Per-country config: data paths, calibrated `P0` (written by `train.py`)                                 |
+| `docs/`                        | Stage-by-stage pipeline documentation (data → labeling → training → evaluation → deployment)       |
+| `docs/COUNTRY_GUIDE.md`        | Step-by-step guide to building a model for another country                                              |
 | `tools/segment_roads.py`       | Utility: cut a raw road network into ~1 km segments                                                     |
+| `tests/` / `Makefile`          | Pytest smoke suite over the core math and config; make targets for the whole pipeline                   |
 | `conflict_road_blockage.ipynb` | Annotated end-to-end walkthrough: load → label → calibrate → score → map → sensitivity             |
 | `build_notebook.py`            | Regenerates the notebook from cell definitions (diffable source of truth)                               |
 | `requirements.txt`             | Pinned dependencies for reproducibility                                                                 |
-| `methodology.md`               | This document                                                                                           |
+| `docs/methodology.md`          | This document                                                                                           |
 
 **Reproduce:** create the venv and `pip install -r requirements.txt` (or `pandas numpy scipy scikit-learn matplotlib seaborn pyyaml nbformat jupyter geopandas shapely pyproj`), then either run the
-two CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
-wired in `countries/afghanistan.yaml` (`Road Network/…segmented.shp`,
-`Admin Boundaries/…adm1….shp`); set `paths.roads: null` to fall back to grid-raster mode.
+CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
+wired in `countries/afghanistan.yaml` (`data/Road Network/…segmented.shp`,
+`data/Admin Boundaries/…adm1….shp`); set `paths.roads: null` to fall back to grid-raster mode.
 
 ---
 

@@ -66,7 +66,7 @@ def check_inputs(df: pd.DataFrame, blocked_col: str) -> int:
     if missing:
         sys.exit(f"ERROR: input CSV is missing required column(s): {missing}\n"
                  f"       a localized export needs the ACLED scoring fields + the "
-                 f"ground-truth '{blocked_col}' label. See LOCALIZATION.md.")
+                 f"ground-truth '{blocked_col}' label. See docs/COUNTRY_GUIDE.md.")
     n_pos = int(c2rb.load_labels(df, blocked_col)["is_road_blocked"].sum())
     if n_pos == 0:
         sys.exit(f"ERROR: no positive '{blocked_col}' labels found -- nothing to "

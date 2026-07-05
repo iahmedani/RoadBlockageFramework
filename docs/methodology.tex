@@ -120,8 +120,8 @@ The severity multiplier $\Msev(e)$ stretches the radius for deadlier and civilia
 events, with diminishing returns so a 50-fatality battle does not produce a $50\times$ radius:
 \begin{align}
 S(n_f)   &= \alpha\,(1+n_f) + (1-\alpha)\bigl(1+\ln(1+n_f)\bigr) \label{eq:sev}\\[2pt]
-\Msev(e) &= \operatorname{clip}\!\Bigl(1 + \kappa\Bigl(\tfrac{S(n_f)}{S(n_{\mathrm{ref}})}-1\Bigr),\,
-            0.5,\,3.0\Bigr)\,\cdot\,(1+\gamma_{\mathrm{civ}}\,c) \label{eq:msev}
+\Msev(e) &= \operatorname{clip}\!\Bigl(\Bigl(1 + \kappa\Bigl(\tfrac{S(n_f)}{S(n_{\mathrm{ref}})}-1\Bigr)\Bigr)
+            \,\cdot\,(1+\gamma_{\mathrm{civ}}\,c),\;0.5,\,3.0\Bigr) \label{eq:msev}
 \end{align}
 with defaults $\alpha=0.15$ (mostly log growth), $\kappa=0.25$, $\gamma_{\mathrm{civ}}=0.30$.
 The \code{clip} bounds keep outliers from exploding the buffer.
@@ -144,7 +144,8 @@ $n_f=0$ (avoiding $\ln 0=-\infty$) and guarantee $S(0)=1$, so a zero-fatality ev
 natural baseline. $S$ enters Equation~\eqref{eq:msev} only through the \emph{ratio}
 $S(n_f)/S(n_{\mathrm{ref}})$: the event is compared to a reference fatality level
 $n_{\mathrm{ref}}$ (default $1$), the ratio is turned into a gentle multiplier by $\kappa$,
-bounded to $[0.5,3]$, and bumped by $\gamma_{\mathrm{civ}}$ if civilians were targeted. In
+bumped by $\gamma_{\mathrm{civ}}$ if civilians were targeted, and the product is bounded to
+$[0.5,3]$. In
 short, Equation~\eqref{eq:sev} converts a raw body count into a \emph{bounded,
 diminishing-returns severity signal} that stretches the buffer sensibly rather than mechanically.
 
@@ -358,28 +359,31 @@ with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under 
 % =====================================================================================
 \section{Pipeline, configuration, and localization}
 
-The framework runs headless through two CLI scripts, both reading a \emph{layered} configuration.
+The framework runs headless through three CLI scripts, all reading a \emph{layered} configuration.
 \code{python train.py --config countries/<name>.yaml} calibrates $P_0(s)$ on the country's
 \code{is\_road\_blocked} labels (Beta--Binomial shrinkage), writes it back into the country config,
-and emits \code{artifacts/<name>/} (\code{metrics.json}, \code{model\_card.md}, calibration plots);
-the calibrated $P_0$ \emph{is} the trained model, and the logistic regression is run only to
-validate it. \code{python score.py --config countries/<name>.yaml --as-of <date> --window-days <n>}
+and emits \code{artifacts/<name>/} (\code{model.joblib}, \code{metrics.json}, \code{model\_card.md},
+calibration plots). Training produces \emph{two models for two questions}: the calibrated
+parametric $P_0$ (the interpretable core that drives the spatial scorer), and a logistic-regression
+classifier that is cross-validated for the \S3.3 metrics and then refit on all rows and persisted
+into \code{model.joblib} as the deployable event-level model.
+\code{python score.py --config countries/<name>.yaml --as-of <date> --window-days <n>}
 scores road segments via noisy-OR over the window's events and ranks the most likely-blocked named
 roads, falling back to a grid surface if no road layer is set --- the \emph{spatial} question
 (\emph{which roads} are blocked). For the \emph{event-level} question (\emph{will this event} block
 a road?), \code{python predict.py --config countries/<name>.yaml --sub-event-type \ldots} loads the
-deployable \code{model.joblib} --- a logistic-regression classifier \code{train.py} fits on the
-labels and persists alongside $P_0$ --- and returns one probability per event (single event or CSV
-batch).
+deployable \code{model.joblib} --- the classifier \code{train.py} fits on the labels and persists
+alongside $P_0$ --- and returns one probability per event (single event or CSV batch).
 
 Country-independent physics --- $\Rphys$, decay kernels, $\Rgeo$, the severity and temporal
 constants --- lives in \code{params.base.yaml} and is shared by every country. Each country adds a
-small override (\code{countries/<name>.yaml}) carrying only its data paths, metric CRS, and
-calibrated $P_0$; \code{c2rb.load\_config} merges the two. Adapting the model to a new country means
-copying the override, pointing it at that country's ACLED export and segmented road network, and
-re-running \code{train.py} then \code{score.py} --- no changes to \code{c2rb.py}. See
-\code{LOCALIZATION.md} for the procedure (including \code{tools/segment\_roads.py}, which cuts a raw
-road network into $\sim$1\,km segments).
+small override (\code{countries/<name>.yaml}) carrying only its data paths and calibrated $P_0$
+(plus an optional \code{crs\_metric} hint for GIS preprocessing); \code{c2rb.load\_config} merges
+the two. Adapting the model to a new country means copying the override, pointing it at that
+country's ACLED export and segmented road network, and re-running \code{train.py} then
+\code{score.py} --- no changes to the \code{c2rb} package. See \code{docs/COUNTRY\_GUIDE.md} for
+the procedure (including \code{tools/segment\_roads.py}, which cuts a raw road network into
+$\sim$1\,km segments).
 
 \begin{table}[h]
 \centering
@@ -388,12 +392,15 @@ road network into $\sim$1\,km segments).
 \toprule
 \textbf{File} & \textbf{Purpose} \\
 \midrule
-\code{c2rb.py} & Framework core: config/label loading, calibration, radius/kernel/noisy-OR math, scorer \\
+\code{c2rb/} & Framework core package: geometry, calibration, config, model physics, spatial scorer, classifier \\
 \code{train.py / score.py / predict.py} & CLI: calibrate + save the model / per-road rankings (spatial) / event-level P(blocked) \\
+\code{app.py} & Streamlit app: event-level prediction + click-to-place spatial scoring \\
 \code{artifacts/<name>/model.joblib} & Deployable trained model: event-level classifier + parametric $P_0$ \\
 \code{params.base.yaml} & Universal parameters: $\Rphys$, decay class, $\Rgeo$, severity \& time constants (shared) \\
-\code{countries/<name>.yaml} & Per-country config: data paths, metric CRS, calibrated $P_0$ (written by \code{train.py}) \\
-\code{LOCALIZATION.md} & Step-by-step guide to building a model for another country \\
+\code{countries/<name>.yaml} & Per-country config: data paths, calibrated $P_0$ (written by \code{train.py}) \\
+\code{docs/} & Stage-by-stage pipeline documentation (data $\to$ labeling $\to$ training $\to$ evaluation $\to$ deployment) \\
+\code{docs/COUNTRY\_GUIDE.md} & Step-by-step guide to building a model for another country \\
+\code{tests/ / Makefile} & Pytest smoke suite over the core math and config; make targets for the pipeline \\
 \code{tools/segment\_roads.py} & Utility: cut a raw road network into $\sim$1\,km segments \\
 \code{conflict\_road\_blockage.ipynb} & Annotated end-to-end walkthrough: load $\to$ label $\to$ calibrate $\to$ score $\to$ map $\to$ sensitivity \\
 \code{build\_notebook.py} & Regenerates the notebook from cell definitions (diffable source of truth) \\
@@ -404,7 +411,7 @@ road network into $\sim$1\,km segments).
 \end{table}
 
 \textbf{Reproduce.} Create the venv and \code{pip install -r requirements.txt}, then either run the
-two CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
+CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
 wired in \code{countries/afghanistan.yaml}; set \code{paths.roads: null} to fall back to
 grid-raster mode.
 

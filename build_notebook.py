@@ -11,9 +11,9 @@ md(r"""
 # Conflict-Event → Road-Blockage Probability — Impact Model
 
 **ACLED Afghanistan, 2017–2026 (69,655 events).** This notebook turns conflict events into
-per-location **road-blockage probabilities**. It mirrors `methodology.md` and uses the
-framework core in `c2rb.py`. Parameters are **layered**: the country-independent physics lives
-in `params.base.yaml`, and country-local settings (data paths, metric CRS, calibrated `P0`) live
+per-location **road-blockage probabilities**. It mirrors `docs/methodology.md` and uses the
+framework core in the `c2rb` package. Parameters are **layered**: the country-independent physics
+lives in `params.base.yaml`, and country-local settings (data paths, calibrated `P0`) live
 in `countries/afghanistan.yaml`; `c2rb.load_config` merges them.
 
 Pipeline: `event → effective buffer radius R_eff → distance-decay kernel → P(block|d) →
@@ -21,7 +21,7 @@ noisy-OR over nearby events (with temporal decay) → P(road blocked)`.
 
 The central idea — **the buffer zone must vary by `sub_event_type`** — is *calibrated from the
 ground-truth `is_road_blocked` label* (Section 3). The same calibration runs headless via
-`python train.py --config countries/afghanistan.yaml` (see `LOCALIZATION.md`).
+`python train.py --config countries/afghanistan.yaml` (see `docs/COUNTRY_GUIDE.md`).
 """)
 
 code(r"""
@@ -332,9 +332,9 @@ md(r"""
 - **Re-calibrate `P0`** on a new classified export → `python train.py --config
   countries/afghanistan.yaml` writes the shrunk values straight back into the country config.
 - **Localize to another country** → copy `countries/afghanistan.yaml`, point it at that country's
-  CSV + roads, then `train.py` then `score.py`. See `LOCALIZATION.md`.
+  CSV + roads, then `train.py` then `score.py`. See `docs/COUNTRY_GUIDE.md`.
 
-See `methodology.md` for the formulas, justification, and limitations.
+See `docs/methodology.md` for the formulas, justification, and limitations.
 """)
 
 nb["cells"] = cells

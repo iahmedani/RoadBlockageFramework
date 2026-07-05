@@ -15,7 +15,7 @@ Usage
 
 `--metric-crs` should be a metre-based projection appropriate to the country (a UTM zone).
 Pick it from the country's central longitude: UTM zone = floor((lon + 180) / 6) + 1, then
-EPSG = 32600 + zone (north) or 32700 + zone (south). See LOCALIZATION.md.
+EPSG = 32600 + zone (north) or 32700 + zone (south). See docs/COUNTRY_GUIDE.md.
 """
 from __future__ import annotations
 import argparse

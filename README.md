@@ -15,32 +15,35 @@ Road **blockage** is driven by **protests and territorial-control events** (deli
 closures), not by explosive violence. IEDs *affect* roads constantly (66%) but rarely *block*
 them (0.3% — a roadside bomb, then traffic resumes). The model is calibrated on ground-truth
 `is_road_blocked` labels and validated at **AUC 0.73 / Brier 0.0085** (better than baseline), with
-**78% of events within 1 km of a road** (matching the published ~70% benchmark).
+**~78% of events within 1 km of a road** (matching the published ~70% benchmark).
 
 ## Quickstart
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+make test          # smoke-test the core math and config machinery
 ```
 
 ### Pipeline (CLI)
 
-Two scripts run the whole process headless, against a per-country config:
+Three scripts run the whole process headless, against a per-country config (or use the
+equivalent `make` targets — `make help` lists them):
 
 ```bash
 # 1) TRAIN — calibrate per-type blockage propensity P0 on the ground-truth labels.
 #    Writes P0 back into the country config and emits artifacts/<country>/.
-python train.py --config countries/afghanistan.yaml
+python train.py --config countries/afghanistan.yaml            # or: make train
 
 # 2) SCORE — rank the roads most likely blocked in a date window (spatial).
 #    Writes road_rankings.csv + p_block_map.png to artifacts/<country>/.
 python score.py --config countries/afghanistan.yaml --as-of 2026-06-01 --window-days 90
+                                                                # or: make score
 
 # 3) PREDICT — given a single event's attributes, P(this event blocks a road).
 #    Uses the saved artifacts/<country>/model.joblib from step 1.
 python predict.py --config countries/afghanistan.yaml \
-    --sub-event-type "Armed clash" --geo-precision 1 --fatalities 3
+    --sub-event-type "Armed clash" --geo-precision 1 --fatalities 3   # or: make predict
 ```
 
 **Two prediction questions, two tools:** `score.py` answers *which roads* are blocked (spatial,
@@ -50,7 +53,7 @@ parametric) for a window of events; `predict.py` answers *will this event* block
 ### Interactive app
 
 ```bash
-streamlit run app.py     # opens http://localhost:8501
+streamlit run app.py     # opens http://localhost:8501     (or: make app)
 ```
 
 A point-and-click test bench: pick an event type to see its blockage probability ranked against
@@ -58,37 +61,44 @@ every other type, or **click anywhere on the map** to drop a hypothetical event 
 nearby road network light up by risk. Auto-discovers any country that has a trained model.
 
 **Localize to another country** by copying `countries/afghanistan.yaml`, pointing it at that
-country's ACLED export + road network, and running the same two commands — see
-**[`LOCALIZATION.md`](LOCALIZATION.md)**. Universal physics (`R_phys`, decay kernels, `R_geo`,
-severity) lives in `params.base.yaml` and is shared by every country.
+country's ACLED export + road network, and running the same commands — see
+**[`docs/COUNTRY_GUIDE.md`](docs/COUNTRY_GUIDE.md)** for the end-to-end walkthrough (data
+acquisition, the labeling protocol, road segmentation, training, evaluation, deployment).
+Universal physics (`R_phys`, decay kernels, `R_geo`, severity) lives in `params.base.yaml`
+and is shared by every country.
 
 ### Notebook (narrated walkthrough)
 
 ```bash
-jupyter nbconvert --to notebook --execute --inplace \
-    --ExecutePreprocessor.timeout=900 conflict_road_blockage.ipynb
+make notebook            # regenerate from build_notebook.py and execute end-to-end
 # ...or open it interactively:
 jupyter notebook conflict_road_blockage.ipynb
 ```
 
+## Documentation
+
+**[`docs/`](docs/README.md)** documents every pipeline stage: data acquisition → labeling
+protocol → road network → configuration → training → evaluation → scoring/prediction →
+deployment → troubleshooting, plus the country guide and the formal methodology
+([`docs/methodology.pdf`](docs/methodology.pdf) — **start here** for the method, formulas,
+results, and limitations).
+
 ## What's here
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `methodology.pdf` / `.md` / `.tex` | **Start here** — the full method, formulas, results, limitations |
-| `LOCALIZATION.md` | How to build a model for another country |
-| `app.py` | Interactive Streamlit app — click-to-test event predictions + a live road-risk map |
+| `docs/` | **All documentation**: stage-by-stage pipeline docs, `COUNTRY_GUIDE.md`, `methodology.pdf`/`.md`/`.tex`, ACLED codebook |
+| `c2rb/` | Reusable framework core package (import `c2rb`): geometry, calibration, config, model physics, scorer, classifier |
 | `train.py` / `score.py` / `predict.py` | CLI pipeline — train the model / road rankings + maps (spatial) / event-level P(blocked) |
-| `artifacts/<name>/model.joblib` | Deployable trained model (event-level classifier + parametric P0) |
-| `c2rb.py` | Reusable framework core (import this) |
+| `app.py` | Interactive Streamlit app — click-to-test event predictions + a live road-risk map |
 | `params.base.yaml` | Universal parameters (`R_phys`, decay, `R_geo`, severity) — shared by all countries |
-| `countries/<name>.yaml` | Per-country config: data paths, metric CRS, calibrated `P0` |
-| `artifacts/<name>/` | Generated outputs: `metrics.json`, `model_card.md`, rankings, plots |
+| `countries/<name>.yaml` | Per-country config: data paths, calibrated `P0` (written by `train.py`) |
+| `artifacts/<name>/` | Generated outputs: `model.joblib` (deployable model), `metrics.json`, `model_card.md`, rankings, plots |
+| `data/` | ACLED CSVs (raw + ground-truth-labeled) and GIS layers (road segments, admin boundaries) |
 | `tools/segment_roads.py` | Utility — cut a raw road network into ~1 km segments |
+| `tests/` / `Makefile` | Pytest smoke suite (core math, config round-trips) and make targets for every pipeline step |
 | `conflict_road_blockage.ipynb` | Annotated end-to-end walkthrough (load → calibrate → score → map) |
 | `build_notebook.py` | Regenerates the notebook (the notebook is generated, not hand-edited) |
-| `ACLED Data_classified.csv` | Dataset with ground-truth `is_road_affected` / `is_road_blocked` |
-| `Road Network/`, `Admin Boundaries/` | Road segments + province polygons (GIS layers) |
 | `CLAUDE.md` | Working notes & conventions for continued development |
 
 ## How it works (one screen)
@@ -106,4 +116,4 @@ event ─▶ R_eff = √(R_phys² + R_geo²)·severity   ─▶  K(d) decay  ─
 ## Requirements
 
 Python 3.14, packages in `requirements.txt`. The PDF is built with
-[Tectonic](https://tectonic-typesetting.github.io/) (`tectonic methodology.tex`).
+[Tectonic](https://tectonic-typesetting.github.io/) (`make pdf`).
