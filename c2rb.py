@@ -314,9 +314,11 @@ def load_config(country_path: str, base_path: str = "params.base.yaml") -> dict:
 
     `base_path` (params.base.yaml) holds the country-INDEPENDENT physics -- r_phys,
     decay kernels, r_geo, severity and temporal constants. `country_path`
-    (countries/<name>.yaml) holds only what is local: data `paths`, the metric
-    `crs_metric`, and the calibrated `p0` / `default_p0`. The returned dict is the
-    merged configuration; pass it to config_from_yaml() and read paths[...] from it.
+    (countries/<name>.yaml) holds only what is local: data `paths`, the calibrated
+    `p0` / `default_p0`, and optionally a `crs_metric` hint (the metric CRS to pass to
+    tools/segment_roads.py --metric-crs; NOT read by training or scoring, which use a
+    local equirectangular frame). The returned dict is the merged configuration; pass
+    it to config_from_yaml() and read paths[...] from it.
     """
     import yaml
     with open(base_path, encoding="utf-8") as fh:

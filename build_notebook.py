@@ -111,8 +111,9 @@ md(r"""
 ## 3. Calibrate the peak blockage propensity `P0(s)`
 
 `P0(s) = P(is_road_blocked | sub_event_type)`, smoothed with **Beta-Binomial empirical-Bayes
-shrinkage** so small types (Grenade, Suicide bomb) don't get unstable 0.000 rates. Wilson 95%
-CIs show the uncertainty. **This is the headline answer to "how does blockage vary by type?"**
+shrinkage** so small types (Grenade, Suicide bomb) don't get unstable 0.000 rates. Beta
+posterior 95% credible intervals show the uncertainty on the shrunk estimate. **This is the
+headline answer to "how does blockage vary by type?"**
 """)
 
 code(r"""
@@ -247,10 +248,11 @@ geopandas, scores each segment midpoint with the *same* `score_targets`, and run
 """)
 
 code(r"""
+import os
 roads_path = CFG_RAW["paths"].get("roads")
 name_col = CFG_RAW["paths"].get("roads_name_col", "NAME_OF_RO")
 admin_path = CFG_RAW["paths"].get("admin")
-if roads_path:
+if roads_path and os.path.exists(roads_path):  # same guard as score.py: fall back to grid mode
     import geopandas as gpd
     roads = gpd.read_file(roads_path).to_crs(4326)
     mids = roads.geometry.representative_point()
@@ -265,7 +267,7 @@ if roads_path:
     print(f"Scored {len(roads):,} road segments | events within 1 km of a road: {100*np.mean(near):.0f}%")
 
     fig, ax = plt.subplots(figsize=(10, 9))
-    if admin_path:
+    if admin_path and os.path.exists(admin_path):
         gpd.read_file(admin_path).to_crs(4326).boundary.plot(ax=ax, color="0.7", lw=0.5)
     roads.plot(column="p_block", cmap="inferno", legend=True, ax=ax, lw=0.7,
                legend_kwds={"label": "P(road blocked)"})

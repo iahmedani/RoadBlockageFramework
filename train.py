@@ -2,12 +2,16 @@
 """
 train.py -- Calibrate a C2RB road-blockage model for one country and emit artifacts.
 
-"Training" here means: estimate the peak blockage propensity P0(sub_event_type) =
-P(is_road_blocked | type) from that country's ground-truth labels, smoothed with
-Beta-Binomial empirical-Bayes shrinkage. The calibrated P0 IS the model -- it is written
-back into the country config (countries/<name>.yaml) and used by score.py. A supervised
-logistic regression is run only to VALIDATE the signal (AUC / PR-AUC / Brier), never to
-score (see methodology.md / CLAUDE.md for why the parametric path is kept).
+"Training" here produces TWO artifacts, one per question (see CLAUDE.md "two models,
+two questions"):
+
+  1. The parametric P0(sub_event_type) = P(is_road_blocked | type), estimated from the
+     country's ground-truth labels with Beta-Binomial empirical-Bayes shrinkage and written
+     back into the country config (countries/<name>.yaml). This drives the SPATIAL scorer
+     (score.py: which roads are blocked) and stays the interpretable core.
+  2. A supervised logistic-regression classifier, cross-validated for the metrics
+     (AUC / PR-AUC / Brier) and then refit on all rows and persisted into model.joblib --
+     the sanctioned EVENT-LEVEL model consumed by predict.py and app.py.
 
 Usage
 -----
@@ -81,6 +85,11 @@ def _q(s) -> str:
     return '"' + str(s).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+# Keys the template below serializes itself; everything else in the country file is a
+# user-added override (e.g. r_phys, tau_days) and must be preserved verbatim on rewrite.
+TEMPLATED_KEYS = {"paths", "crs_metric", "p0", "default_p0"}
+
+
 def render_country_yaml(country: dict, name: str, prior_strength: float) -> str:
     """Serialize the country override file with the calibrated P0 block, stable ordering."""
     paths = country.get("paths", {})
@@ -95,7 +104,8 @@ def render_country_yaml(country: dict, name: str, prior_strength: float) -> str:
         f"# countries/{name}.yaml -- COUNTRY override for the c2rb framework.",
         "#",
         "# Merged ON TOP of params.base.yaml by c2rb.load_config(). Holds ONLY what is local:",
-        "# data paths, the metric CRS, and the calibrated blockage propensity P0.",
+        "# data paths, the calibrated blockage propensity P0, an optional crs_metric hint for",
+        "# GIS preprocessing, and any country-level physics overrides (preserved on retrain).",
         "#",
         f"# The p0 / default_p0 block below was WRITTEN BY train.py (prior_strength="
         f"{prior_strength:g}), calibrated on this country's ground-truth 'is_road_blocked'",
@@ -109,7 +119,17 @@ def render_country_yaml(country: dict, name: str, prior_strength: float) -> str:
         if k in paths and paths[k] is not None:
             L.append(f"  {k}: {_q(paths[k])}")
     if country.get("crs_metric"):
-        L.append(f"crs_metric: {_q(country['crs_metric'])}")
+        L.append(f"crs_metric: {_q(country['crs_metric'])}"
+                 "   # GIS hint (tools/segment_roads.py --metric-crs); not read by the model")
+
+    # Preserve any country-level physics overrides (r_phys, tau_days, ...) verbatim --
+    # the localization guide tells users to put them here, so a retrain must not eat them.
+    extras = {k: v for k, v in country.items() if k not in TEMPLATED_KEYS}
+    if extras:
+        L += ["", "# ---- Country-level overrides of params.base.yaml (preserved by train.py) " + "-" * 9]
+        L.append(yaml.safe_dump(extras, sort_keys=False, default_flow_style=False,
+                                allow_unicode=True).rstrip())
+
     L += [
         "",
         "# ---- Peak blockage propensity P0 by sub_event_type  (CALIBRATED) " + "-" * 18,
@@ -175,7 +195,8 @@ def write_model_card(path: str, name: str, meta: dict, p0tab: pd.DataFrame,
             f"- **Brier** = {val['brier']:.5f}  vs no-skill baseline "
             f"{val['brier_baseline']:.5f}  -> **{passes}**",
             "",
-            "Validation checks that the per-type signal generalises; it is not the scoring path.",
+            "Validation cross-validates the same classifier that is then refit on all rows "
+            "and persisted as `model.joblib` (the event-level model used by predict.py).",
             "",
         ]
     else:
@@ -220,8 +241,8 @@ def main() -> None:
     affected_col = cfg_raw["paths"].get("label_affected_col", "is_road_affected")
 
     df = pd.read_csv(cfg_raw["paths"]["acled_csv"], encoding="utf-8-sig", low_memory=False)
+    n_pos = check_inputs(df, blocked_col)  # gatekeeper first: friendly error on a bad export
     df = c2rb.prepare_events(df)
-    n_pos = check_inputs(df, blocked_col)
 
     # Attach parsed 0/1 labels (assign back -- do NOT concat; that dupes columns).
     labels = c2rb.load_labels(df, blocked_col, affected_col)

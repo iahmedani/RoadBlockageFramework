@@ -32,8 +32,9 @@ import matplotlib.pyplot as plt
 import c2rb
 
 
-def load_events(cfg_raw: dict, as_of: pd.Timestamp, window_days: int) -> pd.DataFrame:
-    """Read the ACLED CSV and return only the events inside [as_of - window, as_of]."""
+def load_events(cfg_raw: dict, as_of: pd.Timestamp,
+                window_days: int) -> tuple[pd.DataFrame, pd.Timestamp]:
+    """Read the ACLED CSV; return (events inside [as_of - window, as_of], window start)."""
     df = pd.read_csv(cfg_raw["paths"]["acled_csv"], encoding="utf-8-sig", low_memory=False)
     df = c2rb.prepare_events(df)
     start = as_of - pd.Timedelta(days=window_days)
