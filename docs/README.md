@@ -21,13 +21,17 @@ data to a deployed model. Read in order if you're new; jump to the stage you nee
 | [08_deployment.md](08_deployment.md) | How do I run the interactive Streamlit app? |
 | [09_troubleshooting.md](09_troubleshooting.md) | Common errors and their fixes. |
 
-Two documents sit above the stage docs:
+Three documents sit above the stage docs:
 
 - **[COUNTRY_GUIDE.md](COUNTRY_GUIDE.md)** — the end-to-end walkthrough for building the model
   for a **new country**, linking into the stage docs at each step. If your goal is "make this
   work for Somalia/Mali/Myanmar", start there.
 - **[methodology.md](methodology.md)** (also `.tex` / `.pdf`) — the formal write-up: formulas,
   statistical justification, validation results, and limitations.
+- **[STATISTICAL_METHODS.md](STATISTICAL_METHODS.md)** — the educational companion: every
+  statistical technique (empirical-Bayes shrinkage, credible vs. Wilson intervals, quadrature,
+  kernels, noisy-OR, cross-validation, imbalance metrics) explained with intuition and worked
+  examples from the real Afghanistan numbers.
 
 Reference: [AcledCodebook.md](AcledCodebook.md) — ACLED's field definitions (event types,
 geo-precision codes, etc.).

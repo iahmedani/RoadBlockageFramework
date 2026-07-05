@@ -79,9 +79,10 @@ jupyter notebook conflict_road_blockage.ipynb
 
 **[`docs/`](docs/README.md)** documents every pipeline stage: data acquisition → labeling
 protocol → road network → configuration → training → evaluation → scoring/prediction →
-deployment → troubleshooting, plus the country guide and the formal methodology
+deployment → troubleshooting, plus the country guide, the formal methodology
 ([`docs/methodology.pdf`](docs/methodology.pdf) — **start here** for the method, formulas,
-results, and limitations).
+results, and limitations), and [`docs/STATISTICAL_METHODS.md`](docs/STATISTICAL_METHODS.md) —
+a plain-language explainer of every statistical technique with worked examples.
 
 ## What's here
 
