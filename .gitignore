@@ -23,9 +23,7 @@ scratch_*
 *.tmp
 
 # Notes:
-# - Large data is tracked by default: ACLED CSVs (~38 MB) and the Road Network /
-#   Admin Boundaries shapefiles. If the repo gets too big, move them to Git LFS or
-#   uncomment the lines below to exclude them.
-# ACLED Data_*.csv
-# Road Network/
-# Admin Boundaries/
+# - Large data is tracked by default under data/: ACLED CSVs (~38 MB) and the
+#   Road Network / Admin Boundaries shapefiles. If the repo gets too big, move them
+#   to Git LFS or uncomment the line below to exclude them.
+# data/

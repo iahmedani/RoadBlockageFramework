@@ -2,7 +2,8 @@
 # countries/afghanistan.yaml -- COUNTRY override for the c2rb framework.
 #
 # Merged ON TOP of params.base.yaml by c2rb.load_config(). Holds ONLY what is local:
-# data paths, the metric CRS, and the calibrated blockage propensity P0.
+# data paths, the calibrated blockage propensity P0, an optional crs_metric hint for
+# GIS preprocessing, and any country-level physics overrides (preserved on retrain).
 #
 # The p0 / default_p0 block below was WRITTEN BY train.py (prior_strength=50), calibrated on this country's ground-truth 'is_road_blocked'
 # label. Retrain:  python train.py --config countries/afghanistan.yaml
@@ -10,13 +11,13 @@
 
 # ---- Data / geometry (LOCAL) -----------------------------------------------------
 paths:
-  acled_csv: "ACLED Data_classified.csv"
+  acled_csv: "data/ACLED Data_classified.csv"
   label_blocked_col: "is_road_blocked"
   label_affected_col: "is_road_affected"
-  roads: "Road Network/afg_trs_roads_l_arazi_2023x_fixed_segmented.shp"
+  roads: "data/Road Network/afg_trs_roads_l_arazi_2023x_fixed_segmented.shp"
   roads_name_col: "NAME_OF_RO"
-  admin: "Admin Boundaries/afg_bnd_adm1_a_agcho-nsia_20171212.shp"
-crs_metric: "EPSG:32642"
+  admin: "data/Admin Boundaries/afg_bnd_adm1_a_agcho-nsia_20171212.shp"
+crs_metric: "EPSG:32642"   # GIS hint (tools/segment_roads.py --metric-crs); not read by the model
 
 # ---- Peak blockage propensity P0 by sub_event_type  (CALIBRATED) ------------------
 # P0(s) = P(is_road_blocked = yes | type) with Beta-Binomial empirical-Bayes shrinkage
