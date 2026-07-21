@@ -21,7 +21,7 @@ data to a deployed model. Read in order if you're new; jump to the stage you nee
 | [08_deployment.md](08_deployment.md) | How do I run the interactive Streamlit app? |
 | [09_troubleshooting.md](09_troubleshooting.md) | Common errors and their fixes. |
 
-Three documents sit above the stage docs:
+Four documents sit above the stage docs:
 
 - **[COUNTRY_GUIDE.md](COUNTRY_GUIDE.md)** — the end-to-end walkthrough for building the model
   for a **new country**, linking into the stage docs at each step. If your goal is "make this
@@ -32,6 +32,9 @@ Three documents sit above the stage docs:
   statistical technique (empirical-Bayes shrinkage, credible vs. Wilson intervals, quadrature,
   kernels, noisy-OR, cross-validation, imbalance metrics) explained with intuition and worked
   examples from the real Afghanistan numbers.
+- **[MODEL_OUTPUTS.md](MODEL_OUTPUTS.md)** — reference for what the trained model actually
+  produces: the calibrated `P0` table, event-level probabilities (`predict.py`), spatial road
+  rankings (`score.py`), and the diagnostic files — with real Afghanistan numbers.
 
 Reference: [AcledCodebook.md](AcledCodebook.md) — ACLED's field definitions (event types,
 geo-precision codes, etc.).
