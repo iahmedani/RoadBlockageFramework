@@ -27,3 +27,4 @@ scratch_*
 #   Road Network / Admin Boundaries shapefiles. If the repo gets too big, move them
 #   to Git LFS or uncomment the line below to exclude them.
 # data/
+CLAUDE.md
