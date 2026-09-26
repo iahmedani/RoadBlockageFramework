@@ -111,7 +111,7 @@ md(r"""
 ## 3. Calibrate the peak blockage propensity `P0(s)`
 
 `P0(s) = P(is_road_blocked | sub_event_type)`, smoothed with **Beta-Binomial empirical-Bayes
-shrinkage** so small types (Grenade, Suicide bomb) don't get unstable 0.000 rates. Beta
+shrinkage** so small types (Headquarters or base established, Sexual violence) don't get unstable 0.000 rates. Beta
 posterior 95% credible intervals show the uncertainty on the shrunk estimate. **This is the
 headline answer to "how does blockage vary by type?"**
 """)

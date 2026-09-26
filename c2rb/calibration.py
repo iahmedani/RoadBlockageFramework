@@ -40,7 +40,7 @@ def empirical_bayes_p0(label: pd.Series, group: pd.Series, prior_strength: float
                        ) -> pd.DataFrame:
     """Per-group blockage propensity P0 = P(is_road_blocked | group).
 
-    Raw rates are unstable for small groups (e.g. Grenade n=176 -> 0.000). We shrink each
+    Raw rates are unstable for small groups (e.g. Suicide bomb n=289 -> 0.000). We shrink each
     group's rate toward the global mean with a Beta(a,b) conjugate prior whose total
     pseudo-count is `prior_strength`, anchored at the global positive rate. This is the
     standard Beta-Binomial empirical-Bayes estimator and gives every type a sane, smoothed

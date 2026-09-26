@@ -67,16 +67,20 @@ def score_roads(events, cfg, cfg_raw, as_of, out, rank_by, top):
     seg = roads[keep_cols].copy().sort_values("p_block", ascending=False)
     seg.to_csv(os.path.join(out, "segment_scores.csv"), index=False)
 
-    # Named-road rollup, ranked by the chosen statistic.
-    rank_col = "max_p" if rank_by == "max" else "mean_p"
-    rank = (roads[roads.p_block > 0]
-            .groupby(name_col)
-            .agg(max_p=("p_block", "max"), mean_p=("p_block", "mean"),
-                 segments=("p_block", "size"))
-            .sort_values(rank_col, ascending=False).round(4))
-    rank.to_csv(os.path.join(out, "road_rankings.csv"))
-    print(f"  top roads by {rank_col}:")
-    print(rank.head(top).to_string())
+    # Named-road rollup, ranked by the chosen statistic (skipped if the layer has no name column).
+    if name_col in roads.columns:
+        rank_col = "max_p" if rank_by == "max" else "mean_p"
+        rank = (roads[roads.p_block > 0]
+                .groupby(name_col)
+                .agg(max_p=("p_block", "max"), mean_p=("p_block", "mean"),
+                     segments=("p_block", "size"))
+                .sort_values(rank_col, ascending=False).round(4))
+        rank.to_csv(os.path.join(out, "road_rankings.csv"))
+        print(f"  top roads by {rank_col}:")
+        print(rank.head(top).to_string())
+    else:
+        print(f"  no road-name column '{name_col}' (set paths.roads_name_col) -- "
+              f"skipping named-road rankings; per-segment scores still written")
     print(f"  segments with P(block) > 0.25: {(roads.p_block > 0.25).sum()} of {len(roads):,}")
 
     # Map.
@@ -136,7 +140,8 @@ def main() -> None:
         as_of = pd.to_datetime(args.as_of)
     else:
         all_dates = pd.to_datetime(pd.read_csv(cfg_raw["paths"]["acled_csv"],
-                                               usecols=["event_date"])["event_date"])
+                                               usecols=["event_date"],
+                                               encoding="utf-8-sig")["event_date"])
         as_of = all_dates.max()
 
     events, start = load_events(cfg_raw, as_of, args.window_days)

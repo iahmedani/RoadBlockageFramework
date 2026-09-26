@@ -61,6 +61,18 @@ def normalize_events(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def warn_unknown_types(events: pd.DataFrame, bundle: dict) -> None:
+    """Warn on stderr about sub_event_types the model never saw. The one-hot encoder ignores
+    them, so they silently score at the classifier's intercept -- usually a typo."""
+    known = set(bundle.get("p0", {}))
+    if not known:
+        return
+    unknown = sorted(set(events["sub_event_type"].astype(str)) - known)
+    if unknown:
+        print(f"WARNING: unknown sub_event_type(s) {unknown} -- scored at the model's baseline "
+              f"(type ignored). Known types: {sorted(known)}", file=sys.stderr)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Predict road-blockage probability for an event.")
     ap.add_argument("--model", default=None, help="path to model.joblib")
@@ -89,6 +101,7 @@ def main() -> None:
     if args.events:
         df = pd.read_csv(args.events, encoding="utf-8-sig", low_memory=False)
         events = normalize_events(df)
+        warn_unknown_types(events, bundle)
         df["p_block"] = c2rb.predict_blockage(clf, events)
         if args.threshold is not None:
             df["p_block_flag"] = (df["p_block"] >= args.threshold).astype(int)
@@ -105,6 +118,7 @@ def main() -> None:
             "fatalities": args.fatalities,
             "civ_flag": int(args.civilian_targeting),
         }]))
+        warn_unknown_types(ev, bundle)
         p = float(c2rb.predict_blockage(clf, ev)[0])
         print(f"\nevent: {args.sub_event_type} | geo_precision={args.geo_precision} | "
               f"fatalities={args.fatalities} | civilian_targeting={args.civilian_targeting}")
