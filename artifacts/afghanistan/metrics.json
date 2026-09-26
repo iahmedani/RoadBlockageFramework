@@ -1,7 +1,7 @@
 {
   "country": "afghanistan",
-  "trained_at": "2026-06-29",
-  "acled_csv": "ACLED Data_classified.csv",
+  "trained_at": "2026-09-26",
+  "acled_csv": "data/ACLED Data_classified.csv",
   "blocked_col": "is_road_blocked",
   "events": 69655,
   "n_positive": 607,

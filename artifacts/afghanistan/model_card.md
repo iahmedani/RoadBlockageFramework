@@ -1,7 +1,7 @@
 # Model card -- C2RB road-blockage model: **afghanistan**
 
-- **Trained:** 2026-06-29
-- **Data:** `ACLED Data_classified.csv` -- 69,655 events
+- **Trained:** 2026-09-26
+- **Data:** `data/ACLED Data_classified.csv` -- 69,655 events
 - **Calibration target:** `is_road_blocked` (607 blocked, 0.87% of events)
 - **Estimator:** per-`sub_event_type` Beta-Binomial empirical-Bayes shrinkage (prior_strength=50) toward the global rate
 
@@ -11,7 +11,7 @@
 - **PR-AUC** = 0.0423  (prevalence 0.0087)
 - **Brier** = 0.00846  vs no-skill baseline 0.00864  -> **PASS**
 
-Validation checks that the per-type signal generalises; it is not the scoring path.
+Validation cross-validates the same classifier that is then refit on all rows and persisted as `model.joblib` (the event-level model used by predict.py).
 
 ## Calibrated P0 (peak blockage propensity, highest first)
 
