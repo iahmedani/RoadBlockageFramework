@@ -49,7 +49,8 @@ The model card lists, per `sub_event_type`: `n`, blocked count, raw rate, **shru
 ## Sensitivity
 
 `R_phys` and the kernel *shapes* are literature-seeded assumptions (unlike P0, which is
-calibrated). Notebook §7 sweeps them to show how the footprint responds — rerun it after any
-physics override so you know what your change did.
+calibrated). Notebook §7 sweeps `R_phys` (all radii scaled 0.5–2×) to show how the high-risk
+footprint responds — rerun it after any physics override so you know what your change did.
+Kernel shapes are not swept; vary `decay:` by hand if you need that.
 
 Next: [07_scoring_and_prediction.md](07_scoring_and_prediction.md).

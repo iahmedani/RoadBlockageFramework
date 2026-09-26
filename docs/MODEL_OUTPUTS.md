@@ -2,7 +2,7 @@
 
 This document answers one question: **"what predictions does the trained model actually
 produce?"** All numbers below are real, taken from the current Afghanistan artifacts
-(`artifacts/afghanistan/`, trained 2026-06-29; spatial scores for the 90-day window ending
+(`artifacts/afghanistan/`, trained 2026-09-26; spatial scores for the 90-day window ending
 2026-06-01).
 
 ## The trained model is a pair, not one file
@@ -52,14 +52,16 @@ probability:
 ```
 $ python predict.py --config countries/afghanistan.yaml \
     --sub-event-type "Peaceful protest" --geo-precision 1 --fatalities 0
+model: afghanistan (trained 2026-09-26, format c2rb-model-v1)
 
 event: Peaceful protest | geo_precision=1 | fatalities=0 | civilian_targeting=False
 P(road blocked by this event) = 0.0649
 ```
 
 The same command with `"Armed clash"` gives ≈ 0.007. Features used: event type (one-hot),
-geo-precision, log-fatalities, civilian-targeting flag. Batch mode: pass `--input <csv>` to
-score many events at once.
+geo-precision, log-fatalities, civilian-targeting flag. Batch mode: pass `--events <csv>` (and
+`--out <csv>`, default `predictions.csv`) to score many events at once; the output is the input
+CSV plus a `p_block` column (and `p_block_flag` if `--threshold` is given).
 
 ## Output 3 — Spatial road rankings (`score.py`)
 

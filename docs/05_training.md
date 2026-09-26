@@ -28,13 +28,14 @@ python train.py --config countries/<name>.yaml
    `P̂0(s) = (k_s + a0)/(n_s + a0 + b0)` where `a0 = p̄·m`, `b0 = (1−p̄)·m`, `m` = prior
    strength (default 50). Intuition: the prior acts as `m` pseudo-events at the global rate —
    a type with 40 events is pulled strongly toward `p̄`; a type with 40,000 keeps its raw rate.
-   Beta posterior 95% credible intervals come along for plotting.
+   Beta posterior 95% credible intervals come along for plotting. The country YAML is
+   rewritten right here (before validation) unless `--no-write-p0`.
 5. **Validation** (`c2rb.validate_signal`, skip with `--no-validate`): 5-fold cross-validation
    of the classifier → AUC, PR-AUC, Brier vs. baseline, calibration-by-decile. See
    [06_evaluation.md](06_evaluation.md) for how to read these.
-6. **Persistence**: rewrites the country YAML (`p0`/`default_p0`; other keys preserved — see
-   [04_configuration.md](04_configuration.md)), saves `model.joblib`, `metrics.json`,
-   `model_card.md`, and the two plots.
+6. **Persistence**: the country YAML (`p0`/`default_p0`; other keys preserved — see
+   [04_configuration.md](04_configuration.md)) was already rewritten in step 4; this step saves
+   `model.joblib` (refit on all rows), `metrics.json`, `model_card.md`, and the two plots.
 
 ## Flags
 

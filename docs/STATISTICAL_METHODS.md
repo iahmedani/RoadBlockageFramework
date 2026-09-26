@@ -185,8 +185,8 @@ Rather than one shape for everything, the **shape is chosen by the event type's 
 
 The σ and λ scalings are chosen so `R_eff` means roughly "the radius containing most of the
 effect" for every shape — kernels are comparable across types. These shapes (unlike `P0`) are
-**assumptions**, literature-seeded; notebook §7's sensitivity analysis quantifies how much they
-matter.
+**assumptions**, literature-seeded; notebook §7's sensitivity analysis sweeps `R_phys` (not the
+kernel shapes, which you would have to vary by hand).
 
 **Where:** `c2rb/model.py::kernel`; per-type assignment in `params.base.yaml` `decay:`.
 

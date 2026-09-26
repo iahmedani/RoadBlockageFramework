@@ -251,15 +251,16 @@ label separates them cleanly.
 
 $P_0(s)=P(\code{is\_road\_blocked}=\text{yes}\mid s)$ is estimated with \textbf{Beta--Binomial
 empirical-Bayes shrinkage} (prior strength 50, anchored at the 0.87\% global rate) so
-small-sample types (Grenade $n{=}176$, Suicide $n{=}289$) get stable estimates instead of
-noisy zeros:
+small-sample types (Grenade $n{=}176$ with a single blocked event, Suicide bomb $n{=}289$ with
+none) get stable estimates instead of noisy near-zero rates:
 \begin{equation}
 \hat{P}_0(s) \;=\; \frac{k_s + a_0}{n_s + a_0 + b_0},
 \qquad a_0 = \bar p\,m,\quad b_0=(1-\bar p)\,m,\quad m=50,
 \end{equation}
 where $k_s$ positives out of $n_s$ events of type $s$, and $\bar p$ is the global rate.
-Selected results with Beta posterior 95\% credible intervals (full 24-row table in
-\code{countries/afghanistan.yaml}):
+Selected results with Beta posterior 95\% credible intervals (full 24-row table with credible
+intervals in \code{artifacts/afghanistan/model\_card.md}; the $P_0$ values themselves are
+written to \code{countries/afghanistan.yaml}):
 
 \begin{table}[h]
 \centering
@@ -268,9 +269,9 @@ Selected results with Beta posterior 95\% credible intervals (full 24-row table 
 \toprule
 \textbf{sub\_event\_type} & \textbf{$n$} & \textbf{$P_0$ (shrunk)} & \textbf{95\% CrI} \\
 \midrule
-Violent demonstration                 & 44       & \textbf{0.090} & [0.04, 0.16] \\
+Violent demonstration                 & 44       & \textbf{0.090} & [0.04, 0.15] \\
 Change to group/activity              & 318      & 0.083 & [0.06, 0.11] \\
-Non-violent transfer of territory     & 130      & 0.080 & [0.05, 0.13] \\
+Non-violent transfer of territory     & 130      & 0.080 & [0.05, 0.12] \\
 Peaceful protest                      & 1{,}454  & 0.060 & [0.05, 0.07] \\
 Non-state actor overtakes territory   & 905      & 0.060 & [0.05, 0.08] \\
 Armed clash                           & 39{,}974 & 0.007 & [0.006, 0.008] \\
@@ -317,8 +318,9 @@ probabilities, not merely rankings.
         published $\sim$70\% figure --- strong external validation.
   \item \textbf{Nesting check} --- blocked $\subseteq$ affected (1 exception in 607), confirming
         label consistency.
-  \item \textbf{Sensitivity analysis} over $\Rphys$ and decay-kernel choice shows how the
-        affected-road footprint responds to assumptions (what is assumed vs.\ learned).
+  \item \textbf{Sensitivity analysis} over $\Rphys$ (all physical radii scaled 0.5--2$\times$)
+        shows how the high-risk footprint (grid cells with $P>0.3$) responds to assumptions
+        (what is assumed vs.\ learned). Kernel shapes are not swept in the notebook.
 \end{itemize}
 
 % =====================================================================================
@@ -345,11 +347,11 @@ with cross-validated AUC / PR-AUC / Brier / calibration-curve diagnostics under 
   \item \textbf{$\Rgeo$ cannot be learned from this data.} ACLED snaps all events at a named
         \code{location} to one shared centroid, so intra-location coordinate spread is
         structurally $\sim$0\,km. We therefore fall back to ACLED's \emph{documented} precision
-        semantics (1/5/25\,km). With finer coordinates, the empirical-spread estimator in the
-        notebook would populate $\Rgeo$.
+        semantics (1/5/25\,km). With finer coordinates, the empirical-spread diagnostic in the
+        notebook (\S4) would show a non-zero spread, which can then be set as \code{r\_geo}.
   \item \textbf{$\Rphys$ and kernel shapes are assumptions} (literature-seeded), unlike $P_0$
-        (data-calibrated). The sensitivity analysis quantifies how much they matter; tune in
-        \code{params.base.yaml}.
+        (data-calibrated). The sensitivity analysis quantifies how much $\Rphys$ matters (kernel
+        shapes are not yet swept); tune in \code{params.base.yaml}.
   \item \textbf{Independence in noisy-OR} slightly over-counts spatially correlated events;
         Voronoi de-duplication (ACLED's approach) is the recommended refinement.
   \item \textbf{Static / impact-only.} This scores the impact of given events; it does not

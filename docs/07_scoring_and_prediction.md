@@ -56,6 +56,10 @@ Loads `artifacts/<name>/model.joblib` (or `--model path`) and runs the persisted
 (defaulted). `--threshold` additionally emits a 0/1 flag at your chosen cut-off — pick it from
 the PR trade-off you care about, not 0.5 (at 0.9% prevalence, 0.5 flags almost nothing).
 
+`sub_event_type` must match a training type exactly (case-sensitive). An unseen type is ignored
+by the one-hot encoder and scores at the classifier's baseline, so `predict.py` prints a
+`WARNING: unknown sub_event_type(s) …` to stderr listing the offenders and the known types.
+
 ## Composing them
 
 A typical operational loop: `predict.py --events` this week's raw feed to triage which incoming

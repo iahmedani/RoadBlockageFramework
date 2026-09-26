@@ -97,7 +97,9 @@ P(block | d, e) = P0(s) · K_s(d ; R_eff)
 
 - **`P0(s)`** — *peak blockage propensity*: the probability that an event of type `s` blocks a
   road at the epicenter. **This is the parameter calibrated on the `is_road_blocked` label** (§3).
-- **`K_s(d)` ∈ [0,1]** — distance-decay kernel, its *shape* chosen by the event type's physics:| Kernel      | Formula                                  | Used for                                   | Rationale                                            |
+- **`K_s(d)` ∈ [0,1]** — distance-decay kernel, its *shape* chosen by the event type's physics:
+
+  | Kernel      | Formula                                  | Used for                                   | Rationale                                            |
   | ----------- | ---------------------------------------- | ------------------------------------------ | ---------------------------------------------------- |
   | Gaussian    | `exp(−d² / 2σ²)`, `σ = R_eff/2` | IED, suicide, grenade, shelling, airstrike | sharp, blast-like, fast decay                        |
   | Exponential | `exp(−d / λ)`, `λ = R_eff/3`      | armed clash / battles                      | heavier tail — fighting spreads along terrain/roads |
@@ -160,7 +162,8 @@ label — conflates these; the ground-truth `is_road_blocked` label separates th
 
 `P0(s) = P(is_road_blocked = yes | s)`, estimated with **Beta-Binomial empirical-Bayes
 shrinkage** (prior strength 50, anchored at the 0.87% global rate) so small-sample types
-(Grenade n=176, Suicide n=289) get stable estimates instead of noisy 0.000s. With `k_s` blocked
+(Grenade n=176 with a single blocked event, Suicide bomb n=289 with none) get stable estimates
+instead of noisy near-zero rates. With `k_s` blocked
 events out of `n_s` of type `s`, and `p̄` the global blocked rate, the shrunk estimate is the
 Beta posterior mean
 
@@ -170,13 +173,14 @@ P̂0(s) = (k_s + a0) / (n_s + a0 + b0),      a0 = p̄·m,  b0 = (1 − p̄)·m, 
 
 so a type with few events is pulled toward `p̄` (the prior acts as `m` pseudo-events at the
 global rate) while a well-observed type keeps essentially its raw rate. Selected results
-(full 24-row table in `countries/afghanistan.yaml`), with Beta posterior 95% credible intervals:
+(full 24-row table with credible intervals in `artifacts/afghanistan/model_card.md`; the `P0`
+values themselves are written to `countries/afghanistan.yaml`), with Beta posterior 95% credible intervals:
 
 | sub_event_type                      |      n | P0 (shrunk) | 95% CrI        |
 | ----------------------------------- | -----: | ----------: | -------------- |
-| Violent demonstration               |     44 |   **0.090** | [0.04, 0.16]   |
+| Violent demonstration               |     44 |   **0.090** | [0.04, 0.15]   |
 | Change to group/activity            |    318 |       0.083 | [0.06, 0.11]   |
-| Non-violent transfer of territory   |    130 |       0.080 | [0.05, 0.13]   |
+| Non-violent transfer of territory   |    130 |       0.080 | [0.05, 0.12]   |
 | Peaceful protest                    |  1,454 |       0.060 | [0.05, 0.07]   |
 | Non-state actor overtakes territory |    905 |       0.060 | [0.05, 0.08]   |
 | Armed clash                         | 39,974 |       0.007 | [0.006, 0.008] |
@@ -210,8 +214,9 @@ trustworthy as probabilities, not just rankings.
   fall within 1 km of a road**, independently matching the published ~70% figure. This is strong
   external validation that the spatial model and data are consistent.
 - **Nesting check** — blocked ⊆ affected (1 exception in 607), confirming label consistency.
-- **Sensitivity analysis** over `R_phys` and decay-kernel choice shows how the affected-road
-  footprint responds to assumptions (transparency about what is assumed vs. learned).
+- **Sensitivity analysis** over `R_phys` (all physical radii scaled 0.5–2×) shows how the
+  high-risk footprint (grid cells with P > 0.3) responds to assumptions (transparency about what
+  is assumed vs. learned). Kernel shapes are not swept in the notebook.
 
 ---
 
@@ -238,9 +243,11 @@ hotspot context.
 2. **`R_geo` cannot be learned from this data.** ACLED snaps all events at a named `location`
    to one shared centroid, so intra-location coordinate spread is structurally ~0 km. We
    therefore fall back to ACLED's *documented* precision semantics (1/5/25 km). If you obtain
-   finer coordinates, the empirical-spread estimator in the notebook will populate `R_geo`.
+   finer coordinates, the empirical-spread diagnostic in the notebook (§4) will show a non-zero
+   spread, which you can then set as `r_geo` in the config.
 3. **`R_phys` and kernel *shapes* are assumptions** (literature-seeded), unlike `P0` (data-
-   calibrated). The sensitivity analysis quantifies how much they matter; tune in `params.base.yaml`.
+   calibrated). The sensitivity analysis quantifies how much `R_phys` matters (kernel shapes are
+   not yet swept); tune in `params.base.yaml`.
 4. **Independence in noisy-OR** slightly over-counts spatially correlated events; Voronoi
    de-duplication (ACLED's approach) is the recommended refinement.
 5. **Static / impact-only.** Per the brief, this scores the impact of given events; it does
@@ -296,7 +303,7 @@ changes to the `c2rb` package. See `docs/COUNTRY_GUIDE.md` for the full procedur
 | `requirements.txt`             | Pinned dependencies for reproducibility                                                                 |
 | `docs/methodology.md`          | This document                                                                                           |
 
-**Reproduce:** create the venv and `pip install -r requirements.txt` (or `pandas numpy scipy scikit-learn matplotlib seaborn pyyaml nbformat jupyter geopandas shapely pyproj`), then either run the
+**Reproduce:** create the venv and `pip install -r requirements.txt`, then either run the
 CLI scripts above or execute the notebook top-to-bottom. The road and admin layers are already
 wired in `countries/afghanistan.yaml` (`data/Road Network/…segmented.shp`,
 `data/Admin Boundaries/…adm1….shp`); set `paths.roads: null` to fall back to grid-raster mode.
